@@ -1,0 +1,4 @@
+# Deny direct access to cached JSON files
+<Files "*.json">
+  Require all denied
+</Files>

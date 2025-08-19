@@ -1,0 +1,20 @@
+<?php
+return [
+    // Default colors (can be overridden by GET)
+    'defaultLabelColor'   => '#555',
+    'defaultMessageColor' => '#4c1',
+    'defaultTextColor'    => '#fff',
+
+    // Typography
+    'fontFamily'          => 'Segoe UI Emoji, Noto Color Emoji, DejaVu Sans, Verdana, sans-serif',
+
+    // Caching for API results (seconds)
+    'cacheTime'           => 600,
+
+    // Optional: GitHub Token (Personal Access Token) for higher rate limits
+    // Leave empty if not needed; for public data 60 req/h unauthenticated.
+    'githubToken'         => '',
+
+    // HTTP cache headers for SVG output
+    'svgMaxAge'           => 300
+];
