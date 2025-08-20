@@ -1,4 +1,4 @@
-# Mini‑Badges (PHP, All‑Inkl‑freundlich)
+# Mini‑Badges
 
 Ein kleines, eigenständiges Badge‑System in **PHP**, das ohne Redis/Docker/Node auskommt.
 Unterstützt **statische** und **dynamische (GitHub)** Badges, **Styles** (ähnlich Shields),
