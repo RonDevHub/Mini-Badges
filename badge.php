@@ -1,5 +1,5 @@
 <?php
-// Mini‑Badges – Badge Renderer (PHP only)
+// Mini-Badges – Badge Renderer (PHP only)
 mb_internal_encoding('UTF-8');
 $config = include __DIR__ . '/config.php';
 
@@ -14,16 +14,20 @@ function q(string $key, ?string $default = null): ?string {
 function esc(string $s): string { return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 function tr(array $t, string $key, string $fallback): string { return $t[$key] ?? $fallback; }
 function approxWidth(string $text, int $char = 7): int {
-    // simplified width estimate (emoji count ~ double width)
     $len = mb_strlen($text);
-    // crude emoji heuristic: count characters outside basic latin
     $widen = 0;
     for ($i=0; $i<$len; $i++) {
         $ch = mb_substr($text, $i, 1);
         if (!preg_match('/^[\x20-\x7E]$/u', $ch)) $widen++;
     }
-    $effective = $len + $widen; // widen non-ASCII a bit
+    $effective = $len + $widen;
     return (int)($effective * $char);
+}
+function normalizeColor(?string $c, string $fallback): string {
+    if (!$c) return $fallback;
+    $c = ltrim($c, '#');
+    if (preg_match('/^[0-9a-fA-F]{6}$/', $c)) return "#".$c;
+    return $fallback;
 }
 
 // Load translations
@@ -42,14 +46,14 @@ $styles = [
 $p = $styles[$style] ?? $styles['flat'];
 
 // Colors & text
-$color1     = q('color1', $config['defaultLabelColor']);
-$color2     = q('color2', $config['defaultMessageColor']);
-$textColor1 = q('textColor1', $config['defaultTextColor']);
-$textColor2 = q('textColor2', $config['defaultTextColor']);
-$icon       = q('icon');               // icons/<name>.svg (without .svg)
-$iconColor  = q('iconColor', '#fff');
-$iconPos    = (int)q('iconPos', '1');  // 1 = in left, 2 = in right
-$iconText   = q('iconText');           // optional text after icon (in same field)
+$color1     = normalizeColor(q('color1'), $config['defaultLabelColor']);
+$color2     = normalizeColor(q('color2'), $config['defaultMessageColor']);
+$textColor1 = normalizeColor(q('textColor1'), $config['defaultTextColor']);
+$textColor2 = normalizeColor(q('textColor2'), $config['defaultTextColor']);
+$icon       = q('icon');                // icon file name (without .svg)
+$iconColor  = normalizeColor(q('iconColor'), '#fff');
+$iconPos    = (int)q('iconPos', '1');   // 1 = in left, 2 = in right
+$iconText   = null; // IconText nicht mehr nutzen im linken Teil
 
 $type  = q('type','static');
 $text1 = q('text1','Status');
@@ -64,13 +68,21 @@ if ($type === 'github') {
     $ttl    = (int)$config['cacheTime'];
     $token  = $config['githubToken'] ?: null;
 
+    // Owner check
+    if (!empty($config['allowedOwners']) && is_array($config['allowedOwners'])) {
+        if (!in_array($owner, $config['allowedOwners'], true)) {
+            http_response_code(400);
+            echo '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="20"><text x="10" y="15" fill="red">Invalid owner</text></svg>';
+            exit;
+        }
+    }
+
     $repoInfo = gh_repo_info($owner, $repo, $ttl, $token);
 
     switch ($metric) {
         case 'stars':
             $text1 = tr($T,'stars','Stars');
             $text2 = isset($repoInfo['stargazers_count']) ? (string)$repoInfo['stargazers_count'] : 'N/A';
-            $icon  = $icon ?: 'star';
             break;
         case 'forks':
             $text1 = tr($T,'forks','Forks');
@@ -99,9 +111,6 @@ if ($type === 'github') {
             $top   = gh_top_language($owner,$repo,$ttl,$token);
             $text2 = $top ?: 'N/A';
             break;
-        default:
-            // leave as provided (allows custom combos)
-            break;
     }
 }
 
@@ -125,72 +134,66 @@ $fontFamily = $config['fontFamily'];
 if (!empty($p['caps'])) {
     $text1 = mb_strtoupper($text1);
     $text2 = mb_strtoupper($text2);
-    if ($iconText) $iconText = mb_strtoupper($iconText);
 }
 
-// Compute widths; include iconText in proper field
-$iconWidth = $iconSvg ? 14 : 0; // raw icon width
+$iconWidth = $iconSvg ? 14 : 0; 
 $iconGap   = $iconSvg ? 4 : 0;
-$iconTextWidth = $iconText ? approxWidth(' ' . $iconText) : 0;
 
 $w1 = $pad + approxWidth($text1) + $pad;
 $w2 = $pad + approxWidth($text2) + $pad;
-
-if ($iconSvg && $iconPos === 1) $w1 += $iconWidth + $iconGap + $iconTextWidth;
-if ($iconSvg && $iconPos === 2) $w2 += $iconWidth + $iconGap + $iconTextWidth;
+if ($iconSvg && $iconPos === 1) $w1 += $iconWidth + $iconGap;
+if ($iconSvg && $iconPos === 2) $w2 += $iconWidth + $iconGap;
 
 $W  = $w1 + $w2;
 
-// Optional gradient (plastic style)
+// Optional gradient
 $grad = '';
 if (!empty($p['gradient'])) {
     $grad = '<linearGradient id="g" x2="0" y2="100%"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-opacity=".7"/></linearGradient>';
 }
 
-// Start SVG
+// --- SVG Output ---
 echo '<svg xmlns="http://www.w3.org/2000/svg" width="'.(int)$W.'" height="'.(int)$h.'" role="img">';
 echo '<title>' . esc($text1 . ' ' . $text2) . '</title>';
 if ($grad) echo $grad;
 
-// Backgrounds
-echo '<rect rx="'.$radius.'" width="'.$w1.'" height="'.$h.'" fill="'.esc($color1).'"/>';
-echo '<rect rx="'.$radius.'" x="'.$w1.'" width="'.$w2.'" height="'.$h.'" fill="'.esc($color2).'"/>';
+// backgrounds: nur außen Rundungen
+echo '<rect x="0" y="0" width="'.$W.'" height="'.$h.'" rx="'.$radius.'" fill="'.$color2.'"/>';
+echo '<rect x="0" y="```php
+0" width="'.$w1.'" height="'.$h.'" rx="'.$radius.'" fill="'.$color1.'"/>';
 
-// Overlay for plastic
 if ($grad) {
-    echo '<rect rx="'.$radius.'" width="'.$W.'" height="'.$h.'" fill="url(#g)"/>';
+    echo '<rect x="0" y="0" width="'.$W.'" height="'.$h.'" rx="'.$radius.'" fill="url(#g)"/>';
 }
 
-// Text positions
+// Textposition
 $yText = ($h / 2) + ($font / 2) - 2;
 
-// Left text + optional icon
+// Left field
 $leftContentX = $pad;
-if ($iconSvg && $iconPos === 1) {
-    // icon
-    $iconY = ($h - 14) / 2;
-    echo '<g transform="translate('.(int)$leftContentX.','.(int)$iconY.')">'.$iconSvg.'</g>';
-    $leftContentX += $iconWidth + $iconGap;
-    if ($iconText) {
-        echo '<text x="'.(int)$leftContentX.'" y="'.(int)$yText.'" fill="'.esc($textColor1).'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" dominant-baseline="middle">'.esc(' '.$iconText).'</text>';
-        $leftContentX += $iconTextWidth;
-    }
-}
-$leftTextX = $w1 / 2;
-echo '<text x="'.(int)$leftTextX.'" y="'.(int)$yText.'" fill="'.esc($textColor1).'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle">'.esc($text1).'</text>';
 
-// Right text + optional icon
-$rightContentX = $w1 + $pad;
-if ($iconSvg && $iconPos === 2) {
-    $iconY = ($h - 14) / 2;
-    echo '<g transform="translate('.(int)$rightContentX.','.(int)$iconY.')">'.$iconSvg.'</g>';
-    $rightContentX += $iconWidth + $iconGap;
-    if ($iconText) {
-        echo '<text x="'.(int)$rightContentX.'" y="'.(int)$yText.'" fill="'.esc($textColor2).'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" dominant-baseline="middle">'.esc(' '.$iconText).'</text>';
-        $rightContentX += $iconTextWidth;
+// Icon only if icon is set and iconPos is 1 (before text1)
+if ($iconSvg) {
+    $iconY = ($h - 14) / 2; // Vertically center the icon
+    echo '<g transform="translate('.(int)$leftContentX.','.(int)$iconY.')">'.$iconSvg.'</g>';
+    $leftContentX += $iconWidth + $iconGap; // Adjust left content X to make room for the icon
+
+    // Display text1 if set, otherwise use the default value or leave empty
+    if ($text1) {
+        $leftTextX = $w1 / 2;
+        echo '<text x="'.(int)$leftTextX.'" y="'.(int)$yText.'" fill="'.$textColor1.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle">'.esc($text1).'</text>';
     }
+} else {
+    // If no icon is set, display only text1 in the left field
+    $leftTextX = $w1 / 2;
+    echo '<text x="'.(int)$leftTextX.'" y="'.(int)$yText.'" fill="'.$textColor1.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle">'.esc($text1).'</text>';
 }
+
+// Right field
+$rightContentX = $w1 + $pad;
+
+// Display text2
 $rightTextX = $w1 + ($w2 / 2);
-echo '<text x="'.(int)$rightTextX.'" y="'.(int)$yText.'" fill="'.esc($textColor2).'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle">'.esc($text2).'</text>';
+echo '<text x="'.(int)$rightTextX.'" y="'.(int)$yText.'" fill="'.$textColor2.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle">'.esc($text2).'</text>';
 
 echo '</svg>';
