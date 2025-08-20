@@ -5,6 +5,9 @@ return [
     'defaultMessageColor' => '#4c1',
     'defaultTextColor'    => '#fff',
 
+    // Allowed owners for GitHub badges
+    'allowedOwners' => [], // nur diese erlaubt
+
     // Typography
     'fontFamily'          => 'Segoe UI Emoji, Noto Color Emoji, DejaVu Sans, Verdana, sans-serif',
 
