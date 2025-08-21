@@ -1,7 +1,12 @@
 <?php
-// Mini-Badges – Badge Renderer (PHP only)
+// Mini-Badges – Shields.io Style (überarbeitet: Rundungen fix + Plastic-Glanz + Lang)
 mb_internal_encoding('UTF-8');
 $config = include __DIR__ . '/config.php';
+
+// Sprache laden
+$lang = q('lang', $config['defaultLang'] ?? 'en');
+$langFile = __DIR__ . '/lang/' . basename($lang) . '.php';
+$L = is_file($langFile) ? include $langFile : include __DIR__ . '/lang/en.php';
 
 // Output headers
 header('Content-Type: image/svg+xml; charset=UTF-8');
@@ -12,7 +17,6 @@ function q(string $key, ?string $default = null): ?string {
     return isset($_GET[$key]) ? trim((string)$_GET[$key]) : $default;
 }
 function esc(string $s): string { return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
-function tr(array $t, string $key, string $fallback): string { return $t[$key] ?? $fallback; }
 function approxWidth(string $text, int $char = 7): int {
     $len = mb_strlen($text);
     $widen = 0;
@@ -20,46 +24,126 @@ function approxWidth(string $text, int $char = 7): int {
         $ch = mb_substr($text, $i, 1);
         if (!preg_match('/^[\x20-\x7E]$/u', $ch)) $widen++;
     }
-    $effective = $len + $widen;
-    return (int)($effective * $char);
+    return (int)(($len + $widen) * $char);
 }
 function normalizeColor(?string $c, string $fallback): string {
     if (!$c) return $fallback;
     $c = ltrim($c, '#');
-    if (preg_match('/^[0-9a-fA-F]{6}$/', $c)) return "#".$c;
-    return $fallback;
+    return preg_match('/^[0-9a-fA-F]{6}$/', $c) ? "#".$c : $fallback;
 }
 
-// Load translations
-$lang = preg_match('~^[a-z]{2}$~i', q('lang','en')) ? q('lang','en') : 'en';
-$langFile = __DIR__ . "/lang/{$lang}.php";
-$T = is_file($langFile) ? include $langFile : include __DIR__ . '/lang/en.php';
+// Path-Helfer: Nur links runden / nur rechts runden (keine Rundung in der Mitte)
+function path_left_rounded(int $w, int $h, int $r): string {
+    $r = max(0, min($r, intdiv($h,2)));
+    return "M {$r},0 H {$w} V {$h} H {$r} A {$r} {$r} 0 0 1 0 ".($h-$r)." V {$r} A {$r} {$r} 0 0 1 {$r} 0 Z";
+}
+function path_right_rounded(int $w, int $h, int $r): string {
+    $r = max(0, min($r, intdiv($h,2)));
+    $wr = $w - $r;
+    return "M 0,0 H {$wr} A {$r} {$r} 0 0 1 {$w} {$r} V ".($h-$r)." A {$r} {$r} 0 0 1 {$wr} {$h} H 0 Z";
+}
 
 // Style presets
 $style = q('style','flat');
 $styles = [
-    'flat' =>         [ 'height' => 20, 'radius' => 3, 'padX' => 10, 'gap' => 6, 'font' => 11, 'caps' => false, 'gradient' => false ],
-    'flat-square' =>  [ 'height' => 20, 'radius' => 0, 'padX' => 10, 'gap' => 6, 'font' => 11, 'caps' => false, 'gradient' => false ],
-    'plastic' =>      [ 'height' => 20, 'radius' => 3, 'padX' => 10, 'gap' => 6, 'font' => 11, 'caps' => false, 'gradient' => true  ],
-    'for-the-badge' =>[ 'height' => 28, 'radius' => 5, 'padX' => 14, 'gap' => 10,'font' => 12, 'caps' => true,  'gradient' => false ],
+    'flat' =>         [ 'height' => 20, 'radius' => 3,  'padX' => 5,  'gap' => 6,  'font' => 11, 'caps' => false, 'gradient' => false ],
+    'round' =>        [ 'height' => 20, 'radius' => 10, 'padX' => 5,  'gap' => 6,  'font' => 11, 'caps' => false, 'gradient' => false ],
+    'flat-square' =>  [ 'height' => 20, 'radius' => 0,  'padX' => 5,  'gap' => 6,  'font' => 11, 'caps' => false, 'gradient' => false ],
+    'plastic' =>      [ 'height' => 20, 'radius' => 3,  'padX' => 5,  'gap' => 6,  'font' => 11, 'caps' => false, 'gradient' => true  ],
+    'for-the-badge' =>[ 'height' => 28, 'radius' => 5,  'padX' => 10, 'gap' => 10, 'font' => 12, 'caps' => true,  'gradient' => false ],
 ];
 $p = $styles[$style] ?? $styles['flat'];
+$h = (int)$p['height'];
+$pad = (int)$p['padX'];
+$font = (int)$p['font'];
+$radius = (int)$p['radius'];
 
-// Colors & text
-$color1     = normalizeColor(q('color1'), $config['defaultLabelColor']);
-$color2     = normalizeColor(q('color2'), $config['defaultMessageColor']);
+// Colors
+$color1 = normalizeColor(q('color1'), $config['defaultLabelColor']);
+$color2 = normalizeColor(q('color2'), $config['defaultMessageColor']);
 $textColor1 = normalizeColor(q('textColor1'), $config['defaultTextColor']);
 $textColor2 = normalizeColor(q('textColor2'), $config['defaultTextColor']);
-$icon       = q('icon');                // icon file name (without .svg)
-$iconColor  = normalizeColor(q('iconColor'), '#fff');
-$iconPos    = (int)q('iconPos', '1');   // 1 = in left, 2 = in right
-$iconText   = null; // IconText nicht mehr nutzen im linken Teil
+$fontFamily = $config['fontFamily'];
 
-$type  = q('type','static');
-$text1 = q('text1','Status');
-$text2 = q('text2','OK');
+// Plastic-Glanz / Lichteffekt
+$defs = '';
+if (!empty($p['gradient'])) {
+    $defs .= '<linearGradient id="shine" x2="0" y2="100%"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient>';
+    $defs .= '<linearGradient id="gloss" x2="0" y2="100%"><stop offset="0" stop-color="#fff" stop-opacity=".65"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>';
+}
 
-// Dynamic: GitHub
+// Type
+$type = q('type','static');
+
+// ------------------- TYPE: STATIC -------------------
+if ($type === 'static') {
+    $textLeft  = q('textLeft','Status');
+    $textRight = q('textRight','OK');
+    if (!empty($p['caps'])) { $textLeft = mb_strtoupper($textLeft); $textRight = mb_strtoupper($textRight); }
+
+    $wLeft  = $pad + approxWidth($textLeft)  + $pad;
+    $wRight = $pad + approxWidth($textRight) + $pad;
+    $W = $wLeft + $wRight;
+    $yText = $h / 2;
+
+    echo '<svg xmlns="http://www.w3.org/2000/svg" width="'.$W.'" height="'.$h.'">';
+    if ($defs) echo '<defs>'.$defs.'</defs>';
+
+    echo '<path d="'.path_left_rounded($wLeft, $h, $radius).'" fill="'.$color1.'"/>';
+    echo '<g transform="translate('.$wLeft.',0)"><path d="'.path_right_rounded($wRight, $h, $radius).'" fill="'.$color2.'"/></g>';
+
+    echo '<text x="'.($wLeft/2).'" y="'.$yText.'" fill="'.$textColor1.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textLeft).'</text>';
+    echo '<text x="'.($wLeft + $wRight/2).'" y="'.$yText.'" fill="'.$textColor2.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textRight).'</text>';
+
+    if (!empty($p['gradient'])) {
+        echo '<rect x="0" y="0" width="'.$W.'" height="'.$h.'" fill="url(#shine)"/>';
+        echo '<rect x="0" y="0" width="'.$W.'" height="'.($h/2).'" fill="url(#gloss)"/>';
+    }
+    echo '</svg>';
+    exit;
+}
+
+// ------------------- TYPE: ICON -------------------
+if ($type === 'icon') {
+    $icon       = q('icon');
+    $iconColor  = normalizeColor(q('iconColor'), '#fff');
+    $textRight  = q('textIconRight','OK');
+    $colorLeft  = normalizeColor(q('color1'), '#555');
+    $colorRight = normalizeColor(q('color2'), '#4c1');
+
+    $iconSvg = '';
+    $iconW = 0;
+    if ($icon && is_file($path = __DIR__ . '/icons/' . basename($icon).'.svg')) {
+        $raw = file_get_contents($path);
+        $iconSvg = str_replace('currentColor', $iconColor, $raw);
+        $iconW = 14;
+    }
+
+    $wLeft  = $pad + $iconW + $pad;
+    $wRight = $pad + approxWidth($textRight) + $pad;
+    $W = $wLeft + $wRight;
+
+    $yText = $h / 2;
+    $iconY = ($h - $iconW) / 2;
+
+    echo '<svg xmlns="http://www.w3.org/2000/svg" width="'.$W.'" height="'.$h.'">';
+    if ($defs) echo '<defs>'.$defs.'</defs>';
+
+    echo '<path d="'.path_left_rounded($wLeft, $h, $radius).'" fill="'.$colorLeft.'"/>';
+    if ($iconSvg) echo '<g transform="translate('.$pad.','.$iconY.')">'.$iconSvg.'</g>';
+
+    echo '<g transform="translate('.$wLeft.',0)"><path d="'.path_right_rounded($wRight, $h, $radius).'" fill="'.$colorRight.'"/></g>';
+    echo '<text x="'.($wLeft + $wRight/2).'" y="'.$yText.'" fill="'.$textColor2.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textRight).'</text>';
+
+    if (!empty($p['gradient'])) {
+        echo '<rect x="0" y="0" width="'.$W.'" height="'.$h.'" fill="url(#shine)"/>';
+        echo '<rect x="0" y="0" width="'.$W.'" height="'.($h/2).'" fill="url(#gloss)"/>';
+    }
+    echo '</svg>';
+    exit;
+}
+
+// ------------------- TYPE: GITHUB -------------------
 if ($type === 'github') {
     require_once __DIR__ . '/github.php';
     $owner  = q('owner','badges');
@@ -67,133 +151,59 @@ if ($type === 'github') {
     $metric = q('metric','stars');
     $ttl    = (int)$config['cacheTime'];
     $token  = $config['githubToken'] ?: null;
+    $icon   = q('icon');
+    $iconColor = normalizeColor(q('iconColor'), '#fff');
 
-    // Owner check
-    if (!empty($config['allowedOwners']) && is_array($config['allowedOwners'])) {
-        if (!in_array($owner, $config['allowedOwners'], true)) {
-            http_response_code(400);
-            echo '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="20"><text x="10" y="15" fill="red">Invalid owner</text></svg>';
-            exit;
-        }
+    if (!empty($config['allowedOwners']) && is_array($config['allowedOwners']) && !in_array($owner, $config['allowedOwners'], true)) {
+        http_response_code(400);
+        echo '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="20"><text x="10" y="15" fill="red">Invalid owner</text></svg>';
+        exit;
     }
 
     $repoInfo = gh_repo_info($owner, $repo, $ttl, $token);
-
     switch ($metric) {
-        case 'stars':
-            $text1 = tr($T,'stars','Stars');
-            $text2 = isset($repoInfo['stargazers_count']) ? (string)$repoInfo['stargazers_count'] : 'N/A';
-            break;
-        case 'forks':
-            $text1 = tr($T,'forks','Forks');
-            $text2 = isset($repoInfo['forks_count']) ? (string)$repoInfo['forks_count'] : 'N/A';
-            break;
-        case 'issues':
-            $text1 = tr($T,'issues','Issues');
-            $text2 = isset($repoInfo['open_issues_count']) ? (string)$repoInfo['open_issues_count'] : 'N/A';
-            break;
-        case 'watchers':
-            $text1 = tr($T,'watchers','Watchers');
-            $text2 = isset($repoInfo['subscribers_count']) ? (string)$repoInfo['subscribers_count'] :
-                     (isset($repoInfo['watchers_count']) ? (string)$repoInfo['watchers_count'] : 'N/A');
-            break;
-        case 'release':
-            $rel   = gh_repo_release($owner,$repo,$ttl,$token);
-            $text1 = tr($T,'release','Release');
-            $text2 = $rel['tag_name'] ?? ($repoInfo['default_branch'] ?? 'N/A');
-            break;
-        case 'license':
-            $text1 = tr($T,'license','License');
-            $text2 = $repoInfo['license']['spdx_id'] ?? ($repoInfo['license']['key'] ?? 'N/A');
-            break;
-        case 'top_language':
-            $text1 = tr($T,'top_language','Top language');
-            $top   = gh_top_language($owner,$repo,$ttl,$token);
-            $text2 = $top ?: 'N/A';
-            break;
+        case 'stars':        $text1=$L['stars'];        $text2=$repoInfo['stargazers_count']??'N/A'; break;
+        case 'forks':        $text1=$L['forks'];        $text2=$repoInfo['forks_count']??'N/A'; break;
+        case 'issues':       $text1=$L['issues'];       $text2=$repoInfo['open_issues_count']??'N/A'; break;
+        case 'watchers':     $text1=$L['watchers'];     $text2=$repoInfo['subscribers_count']??($repoInfo['watchers_count']??'N/A'); break;
+        case 'release':      $text1=$L['release'];      $rel=gh_repo_release($owner,$repo,$ttl,$token); $text2=$rel['tag_name']??($repoInfo['default_branch']??'N/A'); break;
+        case 'license':      $text1=$L['license'];      $text2=$repoInfo['license']['spdx_id']??($repoInfo['license']['key']??'N/A'); break;
+        case 'top_language': $text1=$L['top_language']; $text2=gh_top_language($owner,$repo,$ttl,$token)??'N/A'; break;
+        default:             $text1='Metric';           $text2='N/A';
     }
-}
 
-// Load icon SVG if present
-$iconSvg = '';
-if ($icon) {
-    $path = __DIR__ . '/icons/' . basename($icon) . '.svg';
-    if (is_file($path)) {
+    $iconSvg = '';
+    $iconW = 0;
+    if ($icon && is_file($path = __DIR__ . '/icons/' . basename($icon).'.svg')) {
         $raw = file_get_contents($path);
         $iconSvg = str_replace('currentColor', $iconColor, $raw);
+        $iconW = 14;
     }
-}
 
-// Geometry
-$h = (int)$p['height'];
-$pad = (int)$p['padX'];
-$font = (int)$p['font'];
-$radius = (int)$p['radius'];
-$fontFamily = $config['fontFamily'];
+    $wLeft  = $pad + ($iconW ? ($iconW + 4) : 0) + approxWidth($text1) + $pad;
+    $wRight = $pad + approxWidth($text2) + $pad;
+    $W = $wLeft + $wRight;
 
-if (!empty($p['caps'])) {
-    $text1 = mb_strtoupper($text1);
-    $text2 = mb_strtoupper($text2);
-}
+    $yText = $h / 2;
+    $iconY = ($h - $iconW) / 2;
 
-$iconWidth = $iconSvg ? 14 : 0; 
-$iconGap   = $iconSvg ? 4 : 0;
+    echo '<svg xmlns="http://www.w3.org/2000/svg" width="'.$W.'" height="'.$h.'">';
+    if ($defs) echo '<defs>'.$defs.'</defs>';
 
-$w1 = $pad + approxWidth($text1) + $pad;
-$w2 = $pad + approxWidth($text2) + $pad;
-if ($iconSvg && $iconPos === 1) $w1 += $iconWidth + $iconGap;
-if ($iconSvg && $iconPos === 2) $w2 += $iconWidth + $iconGap;
+    echo '<path d="'.path_left_rounded($wLeft, $h, $radius).'" fill="'.$color1.'"/>';
+    $x = $pad;
+    if ($iconSvg) { echo '<g transform="translate('.$x.','.$iconY.')">'.$iconSvg.'</g>'; $x += $iconW + 4; }
+    $leftTextInnerWidth = $wLeft - $x - $pad;
+    $leftTextCenterX = $x + ($leftTextInnerWidth / 2);
+    echo '<text x="'.$leftTextCenterX.'" y="'.$yText.'" fill="'.$textColor1.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($text1).'</text>';
 
-$W  = $w1 + $w2;
+    echo '<g transform="translate('.$wLeft.',0)"><path d="'.path_right_rounded($wRight, $h, $radius).'" fill="'.$color2.'"/></g>';
+    echo '<text x="'.($wLeft + $wRight/2).'" y="'.$yText.'" fill="'.$textColor2.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($text2).'</text>';
 
-// Optional gradient
-$grad = '';
-if (!empty($p['gradient'])) {
-    $grad = '<linearGradient id="g" x2="0" y2="100%"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-opacity=".7"/></linearGradient>';
-}
-
-// --- SVG Output ---
-echo '<svg xmlns="http://www.w3.org/2000/svg" width="'.(int)$W.'" height="'.(int)$h.'" role="img">';
-echo '<title>' . esc($text1 . ' ' . $text2) . '</title>';
-if ($grad) echo $grad;
-
-// backgrounds: nur außen Rundungen
-echo '<rect x="0" y="0" width="'.$W.'" height="'.$h.'" rx="'.$radius.'" fill="'.$color2.'"/>';
-echo '<rect x="0" y="```php
-0" width="'.$w1.'" height="'.$h.'" rx="'.$radius.'" fill="'.$color1.'"/>';
-
-if ($grad) {
-    echo '<rect x="0" y="0" width="'.$W.'" height="'.$h.'" rx="'.$radius.'" fill="url(#g)"/>';
-}
-
-// Textposition
-$yText = ($h / 2) + ($font / 2) - 2;
-
-// Left field
-$leftContentX = $pad;
-
-// Icon only if icon is set and iconPos is 1 (before text1)
-if ($iconSvg) {
-    $iconY = ($h - 14) / 2; // Vertically center the icon
-    echo '<g transform="translate('.(int)$leftContentX.','.(int)$iconY.')">'.$iconSvg.'</g>';
-    $leftContentX += $iconWidth + $iconGap; // Adjust left content X to make room for the icon
-
-    // Display text1 if set, otherwise use the default value or leave empty
-    if ($text1) {
-        $leftTextX = $w1 / 2;
-        echo '<text x="'.(int)$leftTextX.'" y="'.(int)$yText.'" fill="'.$textColor1.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle">'.esc($text1).'</text>';
+    if (!empty($p['gradient'])) {
+        echo '<rect x="0" y="0" width="'.$W.'" height="'.$h.'" fill="url(#shine)"/>';
+        echo '<rect x="0" y="0" width="'.$W.'" height="'.($h/2).'" fill="url(#gloss)"/>';
     }
-} else {
-    // If no icon is set, display only text1 in the left field
-    $leftTextX = $w1 / 2;
-    echo '<text x="'.(int)$leftTextX.'" y="'.(int)$yText.'" fill="'.$textColor1.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle">'.esc($text1).'</text>';
+    echo '</svg>';
+    exit;
 }
-
-// Right field
-$rightContentX = $w1 + $pad;
-
-// Display text2
-$rightTextX = $w1 + ($w2 / 2);
-echo '<text x="'.(int)$rightTextX.'" y="'.(int)$yText.'" fill="'.$textColor2.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle">'.esc($text2).'</text>';
-
-echo '</svg>';
