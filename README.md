@@ -14,13 +14,24 @@ Unterstützt **statische** und **dynamische (GitHub)** Badges, **Styles** (ähnl
 4. Rufe `examples.html` im Browser auf.
 
 ## Nutzung (Beispiele)
-- Statisch:  
-  `badge.php?text1=Ronny❤️PHP&text2=Awesome&style=flat&color1=black&color2=blue`
+- Statisch:
 
-- GitHub Stars (de):  
-  `badge.php?type=github&metric=stars&owner=badges&repo=shields&lang=de`
+![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?textLeft=RonDevHub❤️PHP&textRight=Awesome&style=flat&color1=000000&color2=3a6e8f)
 
-- Top‑Sprache (Repo):  
+  `badge.php?textLeft=RonDevHub❤️PHP&textRight=Awesome&style=flat&color1=000000&color2=3a6e8f`
+
+- Mit Icon:
+
+- GitHub Stars (de):
+
+![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=github&metric=stars&owner=RonDevHub&repo=Mini-Badges&icon=star&lang=de)
+
+  `badge.php?type=github&metric=stars&owner=RonDevHub&repo=Mini-Badges&icon=star&lang=de`
+
+- Top‑Sprache (Repo):
+
+![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=github&metric=top_language&owner=RonDevHub&repo=Mini-Badges)
+
   `badge.php?type=github&metric=top_language&owner=badges&repo=shields`
 
 ## Parameter
