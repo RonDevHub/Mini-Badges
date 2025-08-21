@@ -107,41 +107,114 @@ if ($type === 'static') {
 if ($type === 'icon') {
     $icon       = q('icon');
     $iconColor  = normalizeColor(q('iconColor'), '#fff');
-    $textRight  = q('textIconRight','OK');
+    $textLeft   = q('textIconLeft','');          // optionaler Text im linken Feld (rechts vom Icon)
+    $textRight  = q('textIconRight','OK');       // Text im rechten Feld
     $colorLeft  = normalizeColor(q('color1'), '#555');
-    $colorRight = normalizeColor(q('color2'), '#4c1');
+    $colorRight = normalizeColor(q('color2'), '#7db701');
 
-    $iconSvg = '';
-    $iconW = 0;
+    // --- Icon laden & robust normalisieren (immer 14x14) ---
+    $iconW  = 14;
+    $gap    = 1; // Abstand zwischen Icon und linkem Text
+    $iconSvgNormalized = '';
     if ($icon && is_file($path = __DIR__ . '/icons/' . basename($icon).'.svg')) {
         $raw = file_get_contents($path);
-        $iconSvg = str_replace('currentColor', $iconColor, $raw);
-        $iconW = 14;
+        // Farbe auf iconColor bringen, falls 'currentColor' genutzt wird
+        $raw = str_replace('currentColor', $iconColor, $raw);
+        // XML/Doctype entfernen
+        $raw = preg_replace('/<\?xml[^>]*\?>/i', '', $raw);
+        $raw = preg_replace('/<!DOCTYPE[^>]*>/i', '', $raw);
+
+        $viewBox = '0 0 24 24'; // brauchbarer Fallback
+        $inner   = $raw;
+
+        // Falls ein umschließendes <svg> vorhanden ist -> Inneres extrahieren + viewBox übernehmen
+        if (preg_match('/<svg\b([^>]*)>(.*?)<\/svg>/is', $raw, $m)) {
+            $svgAttrs = $m[1];
+            $inner    = $m[2];
+            if (preg_match('/viewBox="([^"]+)"/i', $svgAttrs, $vb)) {
+                $viewBox = $vb[1];
+            }
+        } else {
+            // Kein <svg>-Wrapper im Icon: versuchen, eine viewBox aus Pfadangaben NICHT zu erraten -> Fallback
+            $viewBox = '0 0 24 24';
+        }
+
+        // Normalisierte, eigenständige SVG-Instanz (14x14), die wir frei positionieren können
+        $iconSvgNormalized =
+            '<svg width="'.$iconW.'" height="'.$iconW.'" viewBox="'.esc($viewBox).'" xmlns="http://www.w3.org/2000/svg">'.$inner.'</svg>';
     }
 
-    $wLeft  = $pad + $iconW + $pad;
+    // --- Breitenberechnung für das linke Feld ---
+    // Aufbau: [pad] Icon [gap] (optional Text) [pad]
+    if ($iconSvgNormalized !== '' && $textLeft !== '') {
+        $leftInner = $iconW + $gap + approxWidth($textLeft);
+    } elseif ($iconSvgNormalized !== '' && $textLeft === '') {
+        $leftInner = $iconW; // nur Icon
+    } elseif ($iconSvgNormalized === '' && $textLeft !== '') {
+        $leftInner = approxWidth($textLeft); // nur Text (falls Icon fehlt)
+    } else {
+        $leftInner = 0; // weder Icon noch Text -> minimaler Rumpf
+    }
+
+    $wLeft  = $pad + $leftInner + $pad;
+    // Minimalbreiten, damit Form nicht kollabiert
+    if ($iconSvgNormalized !== '' && $textLeft === '') {
+        $wLeft = max($wLeft, $pad + $iconW + $pad);
+    }
+    if ($iconSvgNormalized === '' && $textLeft === '') {
+        $wLeft = max($wLeft, $pad * 2);
+    }
+
+    // Rechtes Feld
     $wRight = $pad + approxWidth($textRight) + $pad;
     $W = $wLeft + $wRight;
 
+    // Vertikale Zentrierung
     $yText = $h / 2;
-    $iconY = ($h - $iconW) / 2;
 
     echo '<svg xmlns="http://www.w3.org/2000/svg" width="'.$W.'" height="'.$h.'">';
     if ($defs) echo '<defs>'.$defs.'</defs>';
 
+    // ---- Linkes Feld: nur links runde Ecken ----
     echo '<path d="'.path_left_rounded($wLeft, $h, $radius).'" fill="'.$colorLeft.'"/>';
-    if ($iconSvg) echo '<g transform="translate('.$pad.','.$iconY.')">'.$iconSvg.'</g>';
 
+    // Icon-Position: mit Text links am Padding; ohne Text zentriert
+    if ($iconSvgNormalized !== '') {
+        if ($textLeft !== '') {
+            $iconX = $pad;
+        } else {
+            $iconX = ($wLeft - $iconW) / 2; // zentriert
+        }
+        $iconY = ($h - $iconW) / 2;
+        // Wir geben das normalisierte 14x14-SVG mit expliziter x/y-Position aus
+        // (positionieren per Attribut, ohne die internen Maße des Icons zu beeinflussen)
+        $iconOut = preg_replace('/<svg\b/i', '<svg x="'.$iconX.'" y="'.$iconY.'"', $iconSvgNormalized, 1);
+        echo $iconOut;
+    }
+
+    // Linker Text (falls vorhanden): mittig im Bereich rechts vom Icon (oder im ganzen linken Feld, wenn kein Icon)
+    if ($textLeft !== '') {
+        $textStartX = $pad + ($iconSvgNormalized !== '' ? ($iconW + $gap) : 0);
+        $leftTextInnerWidth = $wLeft - $textStartX - $pad;
+        $leftTextCenterX = $textStartX + ($leftTextInnerWidth / 2);
+        echo '<text x="'.$leftTextCenterX.'" y="'.$yText.'" fill="'.$textColor1.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textLeft).'</text>';
+    }
+
+    // ---- Rechtes Feld: nur rechts runde Ecken ----
     echo '<g transform="translate('.$wLeft.',0)"><path d="'.path_right_rounded($wRight, $h, $radius).'" fill="'.$colorRight.'"/></g>';
     echo '<text x="'.($wLeft + $wRight/2).'" y="'.$yText.'" fill="'.$textColor2.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textRight).'</text>';
 
+    // Glanz + Licht (Plastic)
     if (!empty($p['gradient'])) {
         echo '<rect x="0" y="0" width="'.$W.'" height="'.$h.'" fill="url(#shine)"/>';
         echo '<rect x="0" y="0" width="'.$W.'" height="'.($h/2).'" fill="url(#gloss)"/>';
     }
+
     echo '</svg>';
     exit;
 }
+
+
 
 // ------------------- TYPE: GITHUB -------------------
 if ($type === 'github') {
@@ -172,38 +245,85 @@ if ($type === 'github') {
         default:             $text1='Metric';           $text2='N/A';
     }
 
-    $iconSvg = '';
-    $iconW = 0;
+    // --- Icon laden & normalisieren ---
+    $iconW  = 14;
+    $gap    = 2; // Abstand Icon ↔ Text
+    $iconSvgNormalized = '';
     if ($icon && is_file($path = __DIR__ . '/icons/' . basename($icon).'.svg')) {
         $raw = file_get_contents($path);
-        $iconSvg = str_replace('currentColor', $iconColor, $raw);
-        $iconW = 14;
+        $raw = str_replace('currentColor', $iconColor, $raw);
+        $raw = preg_replace('/<\?xml[^>]*\?>/i', '', $raw);
+        $raw = preg_replace('/<!DOCTYPE[^>]*>/i', '', $raw);
+
+        $viewBox = '0 0 24 24';
+        $inner   = $raw;
+        if (preg_match('/<svg\b([^>]*)>(.*?)<\/svg>/is', $raw, $m)) {
+            $svgAttrs = $m[1];
+            $inner    = $m[2];
+            if (preg_match('/viewBox="([^"]+)"/i', $svgAttrs, $vb)) {
+                $viewBox = $vb[1];
+            }
+        }
+        $iconSvgNormalized =
+            '<svg width="'.$iconW.'" height="'.$iconW.'" viewBox="'.esc($viewBox).'" xmlns="http://www.w3.org/2000/svg">'.$inner.'</svg>';
     }
 
-    $wLeft  = $pad + ($iconW ? ($iconW + 4) : 0) + approxWidth($text1) + $pad;
+    // --- Breitenberechnung für linkes Feld ---
+    if ($iconSvgNormalized !== '' && $text1 !== '') {
+        $leftInner = $iconW + $gap + approxWidth($text1);
+    } elseif ($iconSvgNormalized !== '' && $text1 === '') {
+        $leftInner = $iconW; // nur Icon
+    } else {
+        $leftInner = approxWidth($text1); // nur Text
+    }
+
+    $wLeft  = $pad + $leftInner + $pad;
+    if ($iconSvgNormalized !== '' && $text1 === '') {
+        $wLeft = max($wLeft, $pad + $iconW + $pad);
+    }
+
     $wRight = $pad + approxWidth($text2) + $pad;
     $W = $wLeft + $wRight;
 
     $yText = $h / 2;
-    $iconY = ($h - $iconW) / 2;
 
     echo '<svg xmlns="http://www.w3.org/2000/svg" width="'.$W.'" height="'.$h.'">';
     if ($defs) echo '<defs>'.$defs.'</defs>';
 
+    // ---- Linkes Feld ----
     echo '<path d="'.path_left_rounded($wLeft, $h, $radius).'" fill="'.$color1.'"/>';
-    $x = $pad;
-    if ($iconSvg) { echo '<g transform="translate('.$x.','.$iconY.')">'.$iconSvg.'</g>'; $x += $iconW + 4; }
-    $leftTextInnerWidth = $wLeft - $x - $pad;
-    $leftTextCenterX = $x + ($leftTextInnerWidth / 2);
-    echo '<text x="'.$leftTextCenterX.'" y="'.$yText.'" fill="'.$textColor1.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($text1).'</text>';
 
+    // Icon-Position
+    if ($iconSvgNormalized !== '') {
+        if ($text1 !== '') {
+            $iconX = $pad;
+        } else {
+            $iconX = ($wLeft - $iconW) / 2; // zentriert
+        }
+        $iconY = ($h - $iconW) / 2;
+        $iconOut = preg_replace('/<svg\b/i', '<svg x="'.$iconX.'" y="'.$iconY.'"', $iconSvgNormalized, 1);
+        echo $iconOut;
+    }
+
+    // Text links (falls vorhanden)
+    if ($text1 !== '') {
+        $textStartX = $pad + ($iconSvgNormalized !== '' ? ($iconW + $gap) : 0);
+        $leftTextInnerWidth = $wLeft - $textStartX - $pad;
+        $leftTextCenterX = $textStartX + ($leftTextInnerWidth / 2);
+        echo '<text x="'.$leftTextCenterX.'" y="'.$yText.'" fill="'.$textColor1.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($text1).'</text>';
+    }
+
+    // ---- Rechtes Feld ----
     echo '<g transform="translate('.$wLeft.',0)"><path d="'.path_right_rounded($wRight, $h, $radius).'" fill="'.$color2.'"/></g>';
     echo '<text x="'.($wLeft + $wRight/2).'" y="'.$yText.'" fill="'.$textColor2.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($text2).'</text>';
 
+    // Glanz/Licht
     if (!empty($p['gradient'])) {
         echo '<rect x="0" y="0" width="'.$W.'" height="'.$h.'" fill="url(#shine)"/>';
         echo '<rect x="0" y="0" width="'.$W.'" height="'.($h/2).'" fill="url(#gloss)"/>';
     }
+
     echo '</svg>';
     exit;
 }
+

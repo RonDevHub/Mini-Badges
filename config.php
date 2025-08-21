@@ -2,11 +2,11 @@
 return [
     // Default colors (can be overridden by GET)
     'defaultLabelColor'   => '#555',
-    'defaultMessageColor' => '#4c1',
+    'defaultMessageColor' => '#7db701',
     'defaultTextColor'    => '#fff',
 
-    // Allowed owners for GitHub badges
-    'allowedOwners' => [], // nur diese erlaubt
+    // Allowed owners for GitHub badges, Example: ['owner1', 'owner2'] or [] for all
+    'allowedOwners' => ['RonDevHub'], // nur diese erlaubt
 
     // Typography
     'fontFamily'          => 'Segoe UI Emoji, Noto Color Emoji, DejaVu Sans, Verdana, sans-serif',
