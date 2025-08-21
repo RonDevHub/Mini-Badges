@@ -1,7 +1,7 @@
 # Mini‑Badges
 ![GitHub Repo stars](https://mini-badges.rondevhub.de/badge.php?type=github&metric=stars&owner=RonDevHub&repo=Mini-Badges) ![GitHub Repo language](https://mini-badges.rondevhub.de/badge.php?type=github&metric=top_language&owner=RonDevHub&repo=Mini-Badges) ![GitHub Repo license](https://mini-badges.rondevhub.de/badge.php?type=github&metric=license&owner=RonDevHub&repo=Mini-Badges) ![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=github&metric=release&owner=RonDevHub&repo=Mini-Badges) ![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=static&textLeft=PHP&textRight=♥️)
 
-![GitHub Repo stars](https://mini-badges.rondevhub.de/badge.php?type=static&textLeft=☕&textColor2=52565e&textRight=By%20me%20a%20Coffee&style=for-the-badge&color1=e4e932&color2=8db9ca)
+<a href="https://www.buymeacoffee.com/RonDev" target="_blank">![Buy me a coffee](https://mini-badges.rondevhub.de/badge.php?type=icon&icon=cup-togo&textIconRight=By%20me%20a%20Coffee&color2=0077b5)</a>  <a href='https://ko-fi.com/U6U31EV2VS' target='_blank'>![Buy me a coffee](https://mini-badges.rondevhub.de/badge.php?type=icon&icon=cup-togo&textIconRight=ko-fi.com&color2=0077b5)</a>
 
 Ein kleines, eigenständiges Badge‑System in **PHP**, das ohne Redis/Docker/Node auskommt.
 Unterstützt **statische** und **dynamische (GitHub)** Badges, **Styles** (ähnlich Shields),
@@ -16,11 +16,15 @@ Unterstützt **statische** und **dynamische (GitHub)** Badges, **Styles** (ähnl
 ## Nutzung (Beispiele)
 - Statisch:
 
-![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?textLeft=RonDevHub❤️PHP&textRight=Awesome&style=flat&color1=000000&color2=3a6e8f)
+![Statisch](https://mini-badges.rondevhub.de/badge.php?textLeft=RonDevHub❤️PHP&textRight=Awesome&style=flat&color1=000000&color2=3a6e8f)
 
   `badge.php?textLeft=RonDevHub❤️PHP&textRight=Awesome&style=flat&color1=000000&color2=3a6e8f`
 
 - Mit Icon:
+
+![Mit Icon](https://mini-badges.rondevhub.de/badge.php?type=icon&icon=github&textIconRight=GitHub&color2=000000)
+
+  `badge.php?type=icon&icon=github&textIconRight=GitHub&color2=000000`
 
 - GitHub Stars (de):
 
@@ -39,7 +43,7 @@ Unterstützt **statische** und **dynamische (GitHub)** Badges, **Styles** (ähnl
 - `textLeft`, `textRight` – Texte für linkes/rechtes Feld (bei `static`)
 - `color1`, `color2` – Hintergrundfarben (Hex oder Farbnamen)
 - `textColor1`, `textColor2` – Textfarben
-- `style=flat|flat-square|plastic|rounded|for-the-badge` - Standard: `flat`
+- `style=flat|flat-square|plastic|round|for-the-badge` - Standard: `flat`
 - `lang=en|de` Standard: `en` Sprache für `type=github`, kann bearbeitet und um weitere Spachen erweitert werden
 - `icon` – Name einer SVG in `icons/` (ohne `.svg`), wird mit `currentColor` gefärbt
 - `iconColor` – Farbe für das Icon (Standard: `#fff`)
@@ -55,4 +59,4 @@ Dieser Download enthält **keine** Icons. Lege deine SVGs (mit `fill="currentCol
 z. B. `icons/star.svg`. Dann `&icon=star` nutzen.
 
 ## Lizenz
-MIT
+![GitHub Repo license](https://mini-badges.rondevhub.de/badge.php?type=github&metric=license&owner=RonDevHub&repo=Mini-Badges)
