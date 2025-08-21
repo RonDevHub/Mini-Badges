@@ -1,4 +1,7 @@
 # Mini‑Badges
+![GitHub Repo stars](https://mini-badges.rondevhub.de/badge.php?type=github&metric=stars&owner=RonDevHub&repo=Mini-Badges) ![GitHub Repo language](https://mini-badges.rondevhub.de/badge.php?type=github&metric=top_language&owner=RonDevHub&repo=Mini-Badges) ![GitHub Repo license](https://mini-badges.rondevhub.de/badge.php?type=github&metric=license&owner=RonDevHub&repo=Mini-Badges) ![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=github&metric=release&owner=RonDevHub&repo=Mini-Badges) ![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=static&textLeft=♥️PHP&textRight=✅)
+
+![GitHub Repo stars](https://mini-badges.rondevhub.de/badge.php?type=static&textLeft=☕&textColor2=52565e&textRight=By%20me%20a%20Coffee&style=for-the-badge&color1=e4e932&color2=8db9ca)
 
 Ein kleines, eigenständiges Badge‑System in **PHP**, das ohne Redis/Docker/Node auskommt.
 Unterstützt **statische** und **dynamische (GitHub)** Badges, **Styles** (ähnlich Shields),
