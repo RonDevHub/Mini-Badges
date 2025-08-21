@@ -24,16 +24,15 @@ Unterstützt **statische** und **dynamische (GitHub)** Badges, **Styles** (ähnl
   `badge.php?type=github&metric=top_language&owner=badges&repo=shields`
 
 ## Parameter
-- `type=static|github` – Standard: `static`
-- `text1`, `text2` – Texte für linkes/rechtes Feld (bei `static`)
+- `type=static|github|icon` – Standard: `static`
+- `textLeft`, `textRight` – Texte für linkes/rechtes Feld (bei `static`)
 - `color1`, `color2` – Hintergrundfarben (Hex oder Farbnamen)
 - `textColor1`, `textColor2` – Textfarben
-- `style=flat|flat-square|plastic|for-the-badge`
-- `lang=en|de`
+- `style=flat|flat-square|plastic|rounded|for-the-badge` - Standard: `flat`
+- `lang=en|de` Standard: `en` Sprache für `type=github`, kann bearbeitet und um weitere Spachen erweitert werden
 - `icon` – Name einer SVG in `icons/` (ohne `.svg`), wird mit `currentColor` gefärbt
 - `iconColor` – Farbe für das Icon (Standard: `#fff`)
-- `iconPos=1|2` – Icon in linkem oder rechtem Feld
-- `iconText=...` – Zusätzlicher Text direkt neben dem Icon im ausgewählten Feld
+- `textIconLeft=...` – Zusätzlicher Text direkt neben dem Icon im ausgewählten Feld
 
 ### GitHub‑spezifisch
 - `metric=stars|forks|issues|watchers|release|license|top_language`
