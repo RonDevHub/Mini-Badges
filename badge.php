@@ -59,10 +59,10 @@ $font = (int)$p['font'];
 $radius = (int)$p['radius'];
 
 // Colors
-$color1 = normalizeColor(q('color1'), $config['defaultLabelColor']);
-$color2 = normalizeColor(q('color2'), $config['defaultMessageColor']);
-$textColor1 = normalizeColor(q('textColor1'), $config['defaultTextColor']);
-$textColor2 = normalizeColor(q('textColor2'), $config['defaultTextColor']);
+$colorLabel = normalizeColor(q('colorLabel'), $config['defaultLabelColor']);
+$colorMessage = normalizeColor(q('colorMessage'), $config['defaultMessageColor']);
+$textColorLabel = normalizeColor(q('textColorLabel'), $config['defaultTextColor']);
+$textColorMessage = normalizeColor(q('textColorMessage'), $config['defaultTextColor']);
 $fontFamily = $config['fontFamily'];
 
 // Plastic-Glanz / Lichteffekt
@@ -77,24 +77,162 @@ $type = q('type','static');
 
 // ------------------- TYPE: STATIC -------------------
 if ($type === 'static') {
-    $textLeft  = q('textLeft','Status');
-    $textRight = q('textRight','OK');
-    if (!empty($p['caps'])) { $textLeft = mb_strtoupper($textLeft); $textRight = mb_strtoupper($textRight); }
 
+    // -------- Helpers nur für diesen Block (kollidieren nicht, da via function_exists abgesichert) --------
+    if (!function_exists('mb_badge_named_colors')) {
+        function mb_badge_named_colors(): array {
+            // Kompakter, erweiterbarer Satz gängiger Farbnamen
+            return [
+                'black'=>'#000000','white'=>'#ffffff','gray'=>'#808080','grey'=>'#808080',
+                'red'=>'#ff0000','orange'=>'#ffa500','yellow'=>'#ffff00','lime'=>'#00ff00','green'=>'#4c1',
+                'teal'=>'#008080','cyan'=>'#00ffff','aqua'=>'#00ffff','blue'=>'#007ec6','navy'=>'#000080',
+                'purple'=>'#800080','magenta'=>'#ff00ff','pink'=>'#ffc0cb','brown'=>'#a52a2a',
+                // Shields-typische Defaults
+                'brightgreen'=>'#4c1','green'=>'#4c1','yellowgreen'=>'#a4a61d','yellow'=>'#dfb317',
+                'orange'=>'#fe7d37','red'=>'#e05d44','blue'=>'#007ec6','lightgrey'=>'#9f9f9f','success'=>'#4c1'
+            ];
+        }
+    }
+
+    if (!function_exists('mb_badge_normalize_color')) {
+        /**
+         * Akzeptiert: '*' (Fallback), Farbnamen, 3/6-stellige HEX (mit/ohne '#').
+         * Gibt '#rrggbb' zurück, sonst $fallback.
+         */
+        function mb_badge_normalize_color(?string $raw, string $fallback): string {
+            if ($raw === null || $raw === '' || $raw === '*') return $fallback;
+            $raw = strtolower(trim($raw));
+            $map = mb_badge_named_colors();
+            if (isset($map[$raw])) return $map[$raw];
+
+            // HEX normalisieren
+            $c = ltrim($raw, '#');
+            if (preg_match('/^[0-9a-f]{3}$/i', $c)) {
+                // z.B. f0a -> ff00aa
+                $c = $c[0].$c[0].$c[1].$c[1].$c[2].$c[2];
+                return '#'.$c;
+            }
+            if (preg_match('/^[0-9a-f]{6}$/i', $c)) {
+                return '#'.$c;
+            }
+            return $fallback;
+        }
+    }
+
+    if (!function_exists('mb_badge_decode_text')) {
+        /**
+         * Dekodiert die Text-Escapes:
+         *  --  => -
+         *  __  => _
+         *   _  => Leerzeichen
+         * Außerdem URL-decode.
+         */
+        function mb_badge_decode_text(string $s): string {
+            $s = urldecode($s);
+            // Platzhalter, damit wir saubere Reihenfolge hinbekommen
+            $H = "\x01"; // hyphen placeholder
+            $U = "\x02"; // underscore placeholder
+            $s = str_replace(['--','__'], [$H,$U], $s);
+            $s = str_replace('_', ' ', $s); // simples '_' wird Space
+            $s = str_replace([$H,$U], ['-','_'], $s); // Platzhalter zurück
+            return $s;
+        }
+    }
+
+    if (!function_exists('mb_badge_parse_side')) {
+        /**
+         * Zerlegt ein Segment wie:
+         *   textLeft-colorLabel-textColorLabel
+         *   textLeft-colorLabel
+         *   textLeft
+         * und gibt [text, color, textColor] (raw, noch nicht normalisiert) zurück.
+         * Doppelte Bindestriche in text (--) werden vor dem Split geschützt.
+         */
+        function mb_badge_parse_side(?string $segment): array {
+            if ($segment === null) return ['', null, null];
+            $segment = urldecode($segment);
+
+            $H = "\x01";               // Placeholder für '--'
+            $segment = str_replace('--', $H, $segment);
+            $parts = explode('-', $segment);
+            foreach ($parts as &$p) { $p = str_replace($H, '-', $p); }
+
+            $n = count($parts);
+            if ($n >= 3) {
+                $text = implode('-', array_slice($parts, 0, $n - 2));
+                $color = $parts[$n - 2];
+                $textColor = $parts[$n - 1];
+            } elseif ($n === 2) {
+                $text = $parts[0];
+                $color = $parts[1];
+                $textColor = null;
+            } else {
+                $text = $parts[0] ?? '';
+                $color = null;
+                $textColor = null;
+            }
+            // Text erst NACH dem Split decodieren (Unterstriche/Spaces/Hyphens)
+            $text = mb_badge_decode_text($text);
+            return [$text, $color, $textColor];
+        }
+    }
+
+    // -------- Route-Unterstützung: /static/<left>/<right>/<style> --------
+    // .htaccess sollte auf left/right/style mappen (siehe unten).
+    $leftSeg  = $_GET['left']  ?? null;
+    $rightSeg = $_GET['right'] ?? null;
+
+    $textLeft  = q('textLeft',  'Status');
+    $textRight = q('textRight', 'OK');
+
+    // Diese Farben wurden oben schon aus GET initiiert:
+    // $colorLabel, $colorMessage, $textColorLabel, $textColorMessage
+
+    if ($leftSeg !== null || $rightSeg !== null) {
+        // Links
+        [$lText, $lColor, $lTextColor] = mb_badge_parse_side($leftSeg ?? '');
+        if ($lText !== '')            $textLeft = $lText;
+        if ($lColor !== null && $lColor !== '')
+            $colorLabel = mb_badge_normalize_color($lColor, $colorLabel);
+        if ($lTextColor !== null && $lTextColor !== '')
+            $textColorLabel = mb_badge_normalize_color($lTextColor, $textColorLabel);
+
+        // Rechts
+        [$rText, $rColor, $rTextColor] = mb_badge_parse_side($rightSeg ?? '');
+        if ($rText !== '')            $textRight = $rText;
+        if ($rColor !== null && $rColor !== '')
+            $colorMessage = mb_badge_normalize_color($rColor, $colorMessage);
+        if ($rTextColor !== null && $rTextColor !== '')
+            $textColorMessage = mb_badge_normalize_color($rTextColor, $textColorMessage);
+    }
+
+    // Großschreibung je nach Style
+    if (!empty($p['caps'])) {
+        $textLeft  = mb_strtoupper($textLeft);
+        $textRight = mb_strtoupper($textRight);
+    }
+
+    // Breiten berechnen
     $wLeft  = $pad + approxWidth($textLeft)  + $pad;
     $wRight = $pad + approxWidth($textRight) + $pad;
-    $W = $wLeft + $wRight;
-    $yText = $h / 2;
+    $W      = $wLeft + $wRight;
+    $yText  = $h / 2;
 
+    // SVG rendern
     echo '<svg xmlns="http://www.w3.org/2000/svg" width="'.$W.'" height="'.$h.'">';
     if ($defs) echo '<defs>'.$defs.'</defs>';
 
-    echo '<path d="'.path_left_rounded($wLeft, $h, $radius).'" fill="'.$color1.'"/>';
-    echo '<g transform="translate('.$wLeft.',0)"><path d="'.path_right_rounded($wRight, $h, $radius).'" fill="'.$color2.'"/></g>';
+    // Linkes Feld (nur links rund)
+    echo '<path d="'.path_left_rounded($wLeft, $h, $radius).'" fill="'.$colorLabel.'"/>';
 
-    echo '<text x="'.($wLeft/2).'" y="'.$yText.'" fill="'.$textColor1.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textLeft).'</text>';
-    echo '<text x="'.($wLeft + $wRight/2).'" y="'.$yText.'" fill="'.$textColor2.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textRight).'</text>';
+    // Rechtes Feld (nur rechts rund)
+    echo '<g transform="translate('.$wLeft.',0)"><path d="'.path_right_rounded($wRight, $h, $radius).'" fill="'.$colorMessage.'"/></g>';
 
+    // Texte
+    echo '<text x="'.($wLeft/2).'" y="'.$yText.'" fill="'.$textColorLabel.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textLeft).'</text>';
+    echo '<text x="'.($wLeft + $wRight/2).'" y="'.$yText.'" fill="'.$textColorMessage.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textRight).'</text>';
+
+    // Plastic-Glanz
     if (!empty($p['gradient'])) {
         echo '<rect x="0" y="0" width="'.$W.'" height="'.$h.'" fill="url(#shine)"/>';
         echo '<rect x="0" y="0" width="'.$W.'" height="'.($h/2).'" fill="url(#gloss)"/>';
@@ -103,14 +241,15 @@ if ($type === 'static') {
     exit;
 }
 
+
 // ------------------- TYPE: ICON -------------------
 if ($type === 'icon') {
     $icon       = q('icon');
     $iconColor  = normalizeColor(q('iconColor'), '#fff');
     $textLeft   = q('textIconLeft','');          // optionaler Text im linken Feld (rechts vom Icon)
     $textRight  = q('textIconRight','OK');       // Text im rechten Feld
-    $colorLeft  = normalizeColor(q('color1'), '#555');
-    $colorRight = normalizeColor(q('color2'), '#7db701');
+    $colorLeft  = normalizeColor(q('colorLabel'), '#555');
+    $colorRight = normalizeColor(q('colorMessage'), '#7db701');
 
     // --- Icon laden & robust normalisieren (immer 14x14) ---
     $iconW  = 14;
@@ -197,12 +336,12 @@ if ($type === 'icon') {
         $textStartX = $pad + ($iconSvgNormalized !== '' ? ($iconW + $gap) : 0);
         $leftTextInnerWidth = $wLeft - $textStartX - $pad;
         $leftTextCenterX = $textStartX + ($leftTextInnerWidth / 2);
-        echo '<text x="'.$leftTextCenterX.'" y="'.$yText.'" fill="'.$textColor1.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textLeft).'</text>';
+        echo '<text x="'.$leftTextCenterX.'" y="'.$yText.'" fill="'.$textColorLabel.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textLeft).'</text>';
     }
 
     // ---- Rechtes Feld: nur rechts runde Ecken ----
     echo '<g transform="translate('.$wLeft.',0)"><path d="'.path_right_rounded($wRight, $h, $radius).'" fill="'.$colorRight.'"/></g>';
-    echo '<text x="'.($wLeft + $wRight/2).'" y="'.$yText.'" fill="'.$textColor2.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textRight).'</text>';
+    echo '<text x="'.($wLeft + $wRight/2).'" y="'.$yText.'" fill="'.$textColorMessage.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($textRight).'</text>';
 
     // Glanz + Licht (Plastic)
     if (!empty($p['gradient'])) {
@@ -291,7 +430,7 @@ if ($type === 'github') {
     if ($defs) echo '<defs>'.$defs.'</defs>';
 
     // ---- Linkes Feld ----
-    echo '<path d="'.path_left_rounded($wLeft, $h, $radius).'" fill="'.$color1.'"/>';
+    echo '<path d="'.path_left_rounded($wLeft, $h, $radius).'" fill="'.$colorLabel.'"/>';
 
     // Icon-Position
     if ($iconSvgNormalized !== '') {
@@ -310,12 +449,12 @@ if ($type === 'github') {
         $textStartX = $pad + ($iconSvgNormalized !== '' ? ($iconW + $gap) : 0);
         $leftTextInnerWidth = $wLeft - $textStartX - $pad;
         $leftTextCenterX = $textStartX + ($leftTextInnerWidth / 2);
-        echo '<text x="'.$leftTextCenterX.'" y="'.$yText.'" fill="'.$textColor1.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($text1).'</text>';
+        echo '<text x="'.$leftTextCenterX.'" y="'.$yText.'" fill="'.$textColorLabel.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($text1).'</text>';
     }
 
     // ---- Rechtes Feld ----
-    echo '<g transform="translate('.$wLeft.',0)"><path d="'.path_right_rounded($wRight, $h, $radius).'" fill="'.$color2.'"/></g>';
-    echo '<text x="'.($wLeft + $wRight/2).'" y="'.$yText.'" fill="'.$textColor2.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($text2).'</text>';
+    echo '<g transform="translate('.$wLeft.',0)"><path d="'.path_right_rounded($wRight, $h, $radius).'" fill="'.$colorMessage.'"/></g>';
+    echo '<text x="'.($wLeft + $wRight/2).'" y="'.$yText.'" fill="'.$textColorMessage.'" font-family="'.esc($fontFamily).'" font-size="'.$font.'" text-anchor="middle" dominant-baseline="middle">'.esc($text2).'</text>';
 
     // Glanz/Licht
     if (!empty($p['gradient'])) {
