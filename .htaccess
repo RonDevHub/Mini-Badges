@@ -1,0 +1,35 @@
+RewriteEngine On
+RewriteBase /
+
+# Bestehende Dateien/Ordner ausnehmen
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# ---------- STATIC ----------
+# /static/<left>/<right>/<style?>
+# left  = textLeft-colorLabel-textColorLabel (verkürzbar)
+# right = textRight-colorMessage-textColorMessage (verkürzbar)
+RewriteRule ^static/([^/]+)/([^/]+)/?([^/]+)?$ badge.php?type=static&left=$1&right=$2&style=$3 [QSA,L]
+
+  
+  
+# ----------------------------------------- Nicht funktionsfähig -----------------------------------------
+# ---------- ICON ----------
+# /icon/<icon-iconColor>/<rightTriplet>/<leftTriplet>/<style?>
+# rightTriplet = textIconRight-colorMessage-textColorMessage
+# leftTriplet  = textIconLeft-colorLabel-textColorLabel
+RewriteRule ^icon/([^/]+)/([^/]+)/([^/]+)/?([^/]+)?$ badge.php?type=icon&iconpair=$1&rightseg=$2&leftseg=$3&style=$4 [QSA,L]
+
+# ---------- GITHUB ----------
+# Voll: /github/<owner>/<repo>/<metric>/<style>/<icon-iconColor>/<lang>/<colorLabel-textColorLabel>/<colorMessage-textColorMessage>
+RewriteRule ^github/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ badge.php?type=github&owner=$1&repo=$2&metric=$3&style=$4&iconpair=$5&lang=$6&labelpair=$7&messagepair=$8 [QSA,L]
+
+# Ohne Farben: /github/<owner>/<repo>/<metric>/<style>/<icon-iconColor>/<lang>
+RewriteRule ^github/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ badge.php?type=github&owner=$1&repo=$2&metric=$3&style=$4&iconpair=$5&lang=$6 [QSA,L]
+
+# Nur Style: /github/<owner>/<repo>/<metric>/<style>
+RewriteRule ^github/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ badge.php?type=github&owner=$1&repo=$2&metric=$3&style=$4 [QSA,L]
+
+# Minimal: /github/<owner>/<repo>/<metric>
+RewriteRule ^github/([^/]+)/([^/]+)/([^/]+)$ badge.php?type=github&owner=$1&repo=$2&metric=$3 [QSA,L]
