@@ -9,7 +9,7 @@ return [
     'allowedOwners' => ['RonDevHub'], // nur diese erlaubt
 
     // Typography
-    'fontFamily'          => 'Segoe UI Emoji, Noto Color Emoji, DejaVu Sans, Verdana, sans-serif',
+    'fontFamily' => 'Courier New, Consolas, monospace, Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, DejaVu Sans, Verdana, sans-serif',
 
     // Caching for API results (seconds)
     'cacheTime'           => 600,
@@ -21,3 +21,4 @@ return [
     // HTTP cache headers for SVG output
     'svgMaxAge'           => 300
 ];
+
