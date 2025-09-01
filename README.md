@@ -1,62 +1,117 @@
-# Mini‑Badges
-![GitHub Repo stars](https://mini-badges.rondevhub.de/badge.php?type=github&metric=stars&owner=RonDevHub&repo=Mini-Badges&style=flat&icon=github) ![GitHub Repo language](https://mini-badges.rondevhub.de/badge.php?type=github&metric=top_language&owner=RonDevHub&repo=Mini-Badges) ![GitHub Repo license](https://mini-badges.rondevhub.de/badge.php?type=github&metric=license&owner=RonDevHub&repo=Mini-Badges) ![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=github&metric=release&owner=RonDevHub&repo=Mini-Badges) ![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=static&textLeft=PHP&textRight=♥️)
+# Mini-Badges (beta)
+> **🫵 Note:**
+> This script is currently in **Beta**.  
+> If you like, you can try the `experimental` branch and test it out.  
+> Please keep in mind that bugs may still occur here and there.  
+> The Wiki is still **under construction**.
+---
+![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/created_at) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/stars) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/issues) ![GitHub Repo language](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/top_language) ![GitHub Repo license](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/license) ![GitHub Repo release](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/release) ![GitHub Repo release](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/forks) ![GitHub Repo downlods](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/downloads) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/watchers) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/pushed_at) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/last_commit) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/commits) ![GitHub Repo downlods](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/branches) ![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=static&textLeft=PHP&textRight=♥️)
 
-<a href="https://www.buymeacoffee.com/RonDev" target="_blank">![Buy me a coffee](https://mini-badges.rondevhub.de/badge.php?type=icon&icon=cup-togo&textIconRight=By%20me%20a%20Coffee&color2=0077b5)</a>  <a href='https://ko-fi.com/U6U31EV2VS' target='_blank'>![Buy me a coffee](https://mini-badges.rondevhub.de/badge.php?type=icon&icon=cup-togo&textIconRight=ko-fi.com&color2=0077b5)</a>
+<a href="https://www.buymeacoffee.com/RonDev" target="_blank">![Buy me a coffee](https://mini-badges.rondevhub.de/icon/cuptogo/Buy_me_a_Coffee-c1d82f-222/flat)</a>  <a href='https://ko-fi.com/U6U31EV2VS' target='_blank'>![Buy me a coffee](https://mini-badges.rondevhub.de/icon/cuptogo/ko--fi.com-c1d82f-222/flat)</a>
 
-Ein kleines, eigenständiges Badge‑System in **PHP**, das ohne Redis/Docker/Node auskommt.
-Unterstützt **statische** und **dynamische (GitHub)** Badges, **Styles** (ähnlich Shields),
-**Farben**, **Sprachen** (de/en) und ein einfaches **Datei‑Caching**.
+---
 
-## Installation
-1. Lade den Inhalt dieses Ordners auf deinen Webspace (z. B. `/www/htdocs/.../badges/`).
-2. Stelle sicher, dass `cache/` beschreibbar ist (z. B. 0775 oder 0777).
-3. Optional: Trage in `config.php` einen GitHub‑Token ein (höhere Rate Limits).
-4. Rufe `examples.html` im Browser auf.
+A small, standalone **PHP Badge System** – no Redis, Docker, or Node required.  
+It supports **static** and **dynamic (GitHub)** badges, multiple **styles** (similar to Shields),  
+**colors**, **languages** (de/en), and simple **file caching**.
 
-## Nutzung (Beispiele)
-- Statisch:
+---
 
-![Statisch](https://mini-badges.rondevhub.de/badge.php?textLeft=RonDevHub❤️PHP&textRight=Awesome&style=flat&color1=000000&color2=3a6e8f)
+## 🚀 Installation
+1. Upload the contents of this folder to your webspace (e.g. `/www/htdocs/.../badges/`).
+2. Make sure the `cache/` directory is writable (e.g. `0775` or `0777`).
+3. *(Optional)* Add a GitHub token in `helpers/config.php` (for higher rate limits).
+4. Open `examples.html` in your browser.
 
-  `badge.php?textLeft=RonDevHub❤️PHP&textRight=Awesome&style=flat&color1=000000&color2=3a6e8f`
+---
 
-- Mit Icon:
+## 🎯 Usage (Examples)
 
-![Mit Icon](https://mini-badges.rondevhub.de/badge.php?type=icon&icon=github&textIconRight=GitHub&color2=000000)
+| URL input                | Badge output    | 
+| :----------------------- | :-------------  |
+| Underscore `_`           | Space ` `       |
+| Double underscore `__`   | Underscore `_`  | 
+| Double dash `--`         | Dash `-`        |
+| Star (asterisk) `*`      | Placeholder Default Value |
 
-  `badge.php?type=icon&icon=github&textIconRight=GitHub&color2=000000`
+---
 
-- GitHub Stars (de):
+### 🔹 Static
 
-![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=github&metric=stars&owner=RonDevHub&repo=Mini-Badges&icon=star&lang=de)
+**URL pattern:**  
+`static/{textLabel}-{bgColor}-{textColor}/{textMessage}-{bgColor}-{textColor}/{style}`
 
-  `badge.php?type=github&metric=stars&owner=RonDevHub&repo=Mini-Badges&icon=star&lang=de`
+Example:  
+![Static](https://mini-badges.rondevhub.de/static/RonDevHub❤️PHP-000000/Awesome-3a6e8f/flat)  
+`static/RonDevHub❤️PHP-000000/Awesome-3a6e8f/flat`
 
-- Top‑Sprache (Repo):
+---
 
-![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=github&metric=top_language&owner=RonDevHub&repo=Mini-Badges)
+### 🔹 With Icon
 
-  `badge.php?type=github&metric=top_language&owner=badges&repo=shields`
+**URL pattern:**  
+`icon/{icon}-{iconColor}/{textMessage}-{bgColor}-{textColor}/{style}/{textLabel}-{bgColor}-{textColor}`
 
-## Parameter
-- `type=static|github|icon` – Standard: `static`
-- `textLeft`, `textRight` – Texte für linkes/rechtes Feld (bei `static`)
-- `color1`, `color2` – Hintergrundfarben (Hex oder Farbnamen)
-- `textColor1`, `textColor2` – Textfarben
-- `style=flat|flat-square|plastic|round|for-the-badge` - Standard: `flat`
-- `lang=en|de` Standard: `en` Sprache für `type=github`, kann bearbeitet und um weitere Spachen erweitert werden
-- `icon` – Name einer SVG in `icons/` (ohne `.svg`), wird mit `currentColor` gefärbt
-- `iconColor` – Farbe für das Icon (Standard: `#fff`)
-- `textIconLeft=...` – Zusätzlicher Text direkt neben dem Icon im ausgewählten Feld
+Examples:  
+![With Icon](https://mini-badges.rondevhub.de/icon/github-gray/Github-*-000000/flat)  
+`/icon/github-gray/Github-*-000000/flat`
 
-### GitHub‑spezifisch
-- `metric=stars|forks|issues|watchers|release|license|top_language`
-- `owner=...` – GitHub User/Org
-- `repo=...` – Repository
+![With Icon](https://mini-badges.rondevhub.de/icon/github/👍-teal/*/Github-6d6e70)  
+`/icon/github/👍-teal/*/Github-6d6e70`
 
-## Icons
-Dieser Download enthält **keine** Icons. Lege deine SVGs (mit `fill="currentColor"`) in `icons/` ab,
-z. B. `icons/star.svg`. Dann `&icon=star` nutzen.
+---
 
-## Lizenz
-![GitHub Repo license](https://mini-badges.rondevhub.de/badge.php?type=github&metric=license&owner=RonDevHub&repo=Mini-Badges)
+### 🔹 GitHub
+
+**URL pattern:**  
+`/github/{owner}/{repo}/{metric}/{style}/{icon}-{iconColor}/{lang}/{backgroundColorMessage}-{textColorMessage}/{backgroundLabelColor}-{textColorLabel}`
+
+Examples:  
+- Stars: ![GitHub Stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/stars/*/*/de)  
+  `github/{owner}/{repo}/stars/*/*/de`
+
+- Top language: ![GitHub Top Language](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/top_language/*/*/*/green)  
+  `github/{owner}/{repo}/top_language/*/*/*/green`
+
+- With icon: ![GitHub Forks](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/forks/round/codefork)  
+  `github/{owner}/{repo}/forks/round/codefork/*/green`
+
+---
+
+## ⚙️ Parameters
+
+- `{textMessage}` – Badge message text (right side)
+- `{textLabel}` – Badge label text (left side)
+- `{bgColor}` – Background color (default: Label `#555`, Message `#0B7DBE`)
+- `{textColor}` – Text color (default: Label & Message `#fff`)
+- `{style}=flat|flat-square|plastic|round|for-the-badge` (default: `flat`)  
+
+Examples:  
+![flat](https://mini-badges.rondevhub.de/static/Style/flat/flat) 
+![flat-square](https://mini-badges.rondevhub.de/static/Style/flat--square/flat-square) 
+![plastic](https://mini-badges.rondevhub.de/static/Style/plastic/plastic) 
+![round](https://mini-badges.rondevhub.de/static/Style/round/round) 
+![for-the-badge](https://mini-badges.rondevhub.de/static/Style/for--the--badge/for-the-badge)
+
+- `{lang}=en|de` (default: `en`) → Used for GitHub badges. Can be extended.
+- `{icon}` – Name of an SVG in `icons/` (without `.svg`). Colored with `currentColor`.
+- `{iconColor}` – Icon color (default: `#fff`)
+
+---
+
+### 🔧 GitHub-specific
+- `{metric}=stars|stars_all|forks|forks_all|issues|issues_all|watchers|watchers_all|release|license|top_language|top_language_count|top_languages_all|downloads|downloads_latest|downloads_all|branches|branches_all|size|size_all|created_at|pushed_at|last_commit|repos_count|prs|prs_all|prs_merged|prs_merged_all|commits|commits_all|subscribers_count|subscribers_count_all|success_rate|success_rate_all|files|files_all|tags|tags_all|follower|follower_name|following|following_name|projects|projects_all|releases|releases_all|gists|commits_stat:-week,month,-year,-all *default day|lines:-added,-deleted,-all|milestones:-open,-closed,-all,allopen,-allclosed *default all from repo|pushes_stat:-week,month,-year,-all *default day`
+- `{owner}` – GitHub user/org
+- `{repo}` – GitHub repository
+
+---
+
+## 🖼️ Icons
+> **⚠️ Note:**  
+> This download contains **no icons**.  
+> Place your SVGs (with `fill="currentColor"`) in the `icons/` folder, e.g. `icons/star.svg`.  
+> Then use `/star/` in the URL.
+
+---
+
+## 📜 License
