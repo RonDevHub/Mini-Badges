@@ -5,7 +5,7 @@
 > Please keep in mind that bugs may still occur here and there.  
 > The [**Wiki**](/wiki) is still **under construction**.
 ---
-![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/created_at) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/stars) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/issues) ![GitHub Repo language](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/top_language)  ![GitHub Repo release](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/release) ![GitHub Repo release](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/forks) ![GitHub Repo downlods](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/downloads) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/watchers) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/push) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/commit-info) ![GitHub Repo downlods](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/branches) ![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=static&textLeft=PHP&textRight=♥️)
+![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/created_at) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/stars) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/issues) ![GitHub Repo language](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/top_language) ![GitHub Repo license](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/license) ![GitHub Repo release](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/release) ![GitHub Repo release](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/forks) ![GitHub Repo downlods](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/downloads) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/watchers) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/commit-info) ![GitHub Repo downlods](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/branches) ![GitHub Repo release](https://mini-badges.rondevhub.de/badge.php?type=static&textLeft=PHP&textRight=♥️)
 
 <a href="https://www.buymeacoffee.com/RonDev" target="_blank">![Buy me a coffee](https://mini-badges.rondevhub.de/icon/cuptogo/Buy_me_a_Coffee-c1d82f-222/flat)</a>  <a href='https://ko-fi.com/U6U31EV2VS' target='_blank'>![Buy me a coffee](https://mini-badges.rondevhub.de/icon/cuptogo/ko--fi.com-c1d82f-222/flat)</a>
 
@@ -91,7 +91,12 @@ Examples:
 ![flat-square](https://mini-badges.rondevhub.de/static/Style/flat--square/flat-square) 
 ![plastic](https://mini-badges.rondevhub.de/static/Style/plastic/plastic) 
 ![round](https://mini-badges.rondevhub.de/static/Style/round/round) 
-![for-the-badge](https://mini-badges.rondevhub.de/static/Style/for--the--badge/for-the-badge)
+![for-the-badge](https://mini-badges.rondevhub.de/static/Style/for--the--badge/for-the-badge) 
+![for-the-badge](https://mini-badges.rondevhub.de/static/Style/classic/classic)
+![for-the-badge](https://mini-badges.rondevhub.de/static/Style/social/social)
+![for-the-badge](https://mini-badges.rondevhub.de/static/Style/minimalist/minimalist)
+![for-the-badge](https://mini-badges.rondevhub.de/static/Style/pill/pill)
+
 
 - `{lang}=en|de` (default: `en`) → Used for GitHub badges. Can be extended.
 - `{icon}` – Name of an SVG in `icons/` (without `.svg`). Colored with `currentColor`.
@@ -100,7 +105,7 @@ Examples:
 ---
 
 ### 🔧 GitHub-specific
-- `{metric}=stars|stars_all|forks|forks_all|issues|issues_all|watchers|watchers_all|release|license|top_language|top_language_count|top_languages_all|downloads|downloads_latest|downloads_all|branches|branches_all|size|size_all|created_at|pushed_at|last_commit|repos_count|prs|prs_all|prs_merged|prs_merged_all|commits|commits_all|subscribers_count|subscribers_count_all|success_rate|success_rate_all|files|files_all|tags|tags_all|follower|follower_name|following|following_name|projects|projects_all|releases|releases_all|gists|commits_stat:-week,month,-year,-all *default day|lines:-added,-deleted,-all|milestones:-open,-closed,-all,allopen,-allclosed *default all from repo|pushes_stat:-week,month,-year,-all *default day`
+- `{metric}` - For example `stars`, `license`, `issues` ... more metrics are listed in the **wiki**
 - `{owner}` – GitHub user/org
 - `{repo}` – GitHub repository
 
