@@ -1,4 +1,4 @@
-# Mini-Badges (beta) ![](https://mini-badges.rondevhub.de/icon/php/I❤️U-000000-fff/pill/-787CB5)
+# Mini-Badges (beta) <sup>![I❤️PHP](https://mini-badges.rondevhub.de/icon/php/I❤️U-000000-fff/pill/-787CB5)</sup>
 > **🫵 Note:**
 > This script is currently in **Beta**.  
 > If you like, you can try the `experimental` branch and test it out.  
