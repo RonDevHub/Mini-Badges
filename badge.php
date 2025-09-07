@@ -646,7 +646,6 @@ if ($type === 'github') {
     $repoInfo = gh_repo_info($owner, $repo, $ttl, $token);
 
     // ------------------- Switch Metric -------------------
-    file_put_contents('debug.log', "GitHub Logic Reached!\n", FILE_APPEND);
     switch ($metric) {
         // Case statement for 'lines'
         case (preg_match('/^lines(?:-(added|deleted|all))?$/', $metric, $m) ? true : false):
