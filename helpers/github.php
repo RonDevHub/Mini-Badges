@@ -800,7 +800,7 @@ if (!function_exists('gh_user_tags_all')) {
         return $sum;
     }
 }
-// ------------------- Follower Function -------------------
+// ------------------- Follower Count Function -------------------
 if (!function_exists('gh_user_followers')) {
     function gh_user_followers(string $user, int $ttl = 3600, ?string $token = null): int
     {
@@ -809,23 +809,26 @@ if (!function_exists('gh_user_followers')) {
         if ($cached !== null) {
             return (int)$cached;
         }
+
         $url = "https://api.github.com/users/{$user}";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
         if ($token) {
             $opts['http']['header'] .= "Authorization: token $token\r\n";
         }
         $context = stream_context_create($opts);
+
         $json = @file_get_contents($url, false, $context);
         if (!$json) {
             return 0;
         }
+
         $userInfo = json_decode($json, true);
         $count = $userInfo['followers'] ?? 0;
         gh_cache_set($cacheKey, $count);
         return $count;
     }
 }
-// ------------------- Following Function -------------------
+// ------------------- Following Count Function -------------------
 if (!function_exists('gh_user_following')) {
     function gh_user_following(string $user, int $ttl = 3600, ?string $token = null): int
     {
@@ -834,75 +837,23 @@ if (!function_exists('gh_user_following')) {
         if ($cached !== null) {
             return (int)$cached;
         }
+
         $url = "https://api.github.com/users/{$user}";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
         if ($token) {
             $opts['http']['header'] .= "Authorization: token $token\r\n";
         }
         $context = stream_context_create($opts);
+
         $json = @file_get_contents($url, false, $context);
         if (!$json) {
             return 0;
         }
+
         $userInfo = json_decode($json, true);
         $count = $userInfo['following'] ?? 0;
         gh_cache_set($cacheKey, $count);
         return $count;
-    }
-}
-// ------------------- Follower/Following Namen Function -------------------
-if (!function_exists('gh_user_follower_name')) {
-    function gh_user_follower_name(string $user, int $ttl = 3600, ?string $token = null): string
-    {
-        $cacheKey = "last_follower_{$user}";
-        $cached = gh_cache_get($cacheKey, $ttl);
-        if ($cached !== null) {
-            return $cached;
-        }
-        $url = "https://api.github.com/users/{$user}/followers?per_page=1";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
-        }
-        $context = stream_context_create($opts);
-        $json = @file_get_contents($url, false, $context);
-        if (!$json) {
-            return 'N/A';
-        }
-        $followers = json_decode($json, true);
-        if (!is_array($followers) || empty($followers)) {
-            return 'N/A';
-        }
-        $name = $followers[0]['login'] ?? 'N/A';
-        gh_cache_set($cacheKey, $name);
-        return $name;
-    }
-}
-if (!function_exists('gh_user_following_name')) {
-    function gh_user_following_name(string $user, int $ttl = 3600, ?string $token = null): string
-    {
-        $cacheKey = "last_following_{$user}";
-        $cached = gh_cache_get($cacheKey, $ttl);
-        if ($cached !== null) {
-            return $cached;
-        }
-        $url = "https://api.github.com/users/{$user}/following?per_page=1";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
-        }
-        $context = stream_context_create($opts);
-        $json = @file_get_contents($url, false, $context);
-        if (!$json) {
-            return 'N/A';
-        }
-        $following = json_decode($json, true);
-        if (!is_array($following) || empty($following)) {
-            return 'N/A';
-        }
-        $name = $following[0]['login'] ?? 'N/A';
-        gh_cache_set($cacheKey, $name);
-        return $name;
     }
 }
 // ------------------- Projects Function -------------------
@@ -1306,7 +1257,7 @@ if (!function_exists('gh_push_info')) {
     {
         $cacheKey = "push_info_" . ($repo ? "repo_{$owner}_{$repo}" : "user_{$owner}");
         $cached = gh_cache_get($cacheKey, $ttl);
-        
+
         $info = [
             'latest' => [
                 'date' => 'N/A',
@@ -1327,18 +1278,18 @@ if (!function_exists('gh_push_info')) {
             $repoJson = @file_get_contents($repoUrl, false, $context);
             $repoData = $repoJson ? json_decode($repoJson, true) : null;
             $latestPushTimestamp = isset($repoData['pushed_at']) ? strtotime($repoData['pushed_at']) : 0;
-            
+
             $cachedPushTimestamp = ($cached !== null && isset($cached['latest']['datetime'])) ? strtotime($cached['latest']['datetime']) : 0;
-            
+
             if ($latestPushTimestamp > $cachedPushTimestamp || $cached === null) {
                 // Finde den neuesten Commit über alle Branches hinweg
                 $branchesUrl = "https://api.github.com/repos/{$owner}/{$repo}/branches";
                 $branchesJson = @file_get_contents($branchesUrl, false, $context);
                 $branches = $branchesJson ? json_decode($branchesJson, true) : [];
-                
+
                 $latestCommit = null;
                 $latestCommitTime = 0;
-                
+
                 foreach ($branches as $branch) {
                     $commitUrl = "https://api.github.com/repos/{$owner}/{$repo}/commits/{$branch['name']}";
                     $commitJson = @file_get_contents($commitUrl, false, $context);
@@ -1351,11 +1302,11 @@ if (!function_exists('gh_push_info')) {
                         }
                     }
                 }
-                
+
                 if ($latestCommit) {
                     $info['latest']['date'] = date('Y-m-d', $latestCommitTime);
                     $info['latest']['datetime'] = date('Y-m-d H:i:s', $latestCommitTime);
-                    
+
                     $commitUrl = $latestCommit['url'];
                     $commitJson = @file_get_contents($commitUrl, false, $context);
                     if ($commitJson) {
@@ -1398,7 +1349,7 @@ if (!function_exists('gh_commit_info')) {
     {
         $cacheKey = "commit_info_" . ($repo ? "repo_{$owner}_{$repo}" : "user_{$owner}");
         $cached = gh_cache_get($cacheKey, $ttl);
-        
+
         $info = [
             'latest' => [
                 'date' => 'N/A',
@@ -1419,10 +1370,10 @@ if (!function_exists('gh_commit_info')) {
             $branchesUrl = "https://api.github.com/repos/{$owner}/{$repo}/branches";
             $branchesJson = @file_get_contents($branchesUrl, false, $context);
             $branches = $branchesJson ? json_decode($branchesJson, true) : [];
-            
+
             $latestCommit = null;
             $latestCommitTime = 0;
-            
+
             foreach ($branches as $branch) {
                 $commitUrl = "https://api.github.com/repos/{$owner}/{$repo}/commits/{$branch['name']}";
                 $commitJson = @file_get_contents($commitUrl, false, $context);
@@ -1435,14 +1386,14 @@ if (!function_exists('gh_commit_info')) {
                     }
                 }
             }
-            
+
             $cachedCommitTimestamp = ($cached !== null && isset($cached['latest']['datetime'])) ? strtotime($cached['latest']['datetime']) : 0;
 
             if ($latestCommitTime > $cachedCommitTimestamp || $cached === null) {
                 if ($latestCommit) {
                     $info['latest']['date'] = date('Y-m-d', $latestCommitTime);
                     $info['latest']['datetime'] = date('Y-m-d H:i:s', $latestCommitTime);
-                    
+
                     $commitUrl = $latestCommit['url'];
                     $commitJson = @file_get_contents($commitUrl, false, $context);
                     if ($commitJson) {
