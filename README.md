@@ -1,7 +1,7 @@
 # Mini-Badges (beta) ![](https://mini-badges.rondevhub.de/icon/php/I❤️U-000000-fff/pill/-787CB5)
 > **🫵 Note:**
 > This script is currently in **Beta**.  
-> If you like, you can try the `experimental` branch and test it out.  
+> If you like, you can try the `beta` branch and test it out.  
 > Please keep in mind that bugs may still occur here and there.  
 > The [**Wiki**](/wiki) is still **under construction**.
 ---
