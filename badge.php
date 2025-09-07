@@ -646,6 +646,7 @@ if ($type === 'github') {
     $repoInfo = gh_repo_info($owner, $repo, $ttl, $token);
 
     // ------------------- Switch Metric -------------------
+    file_put_contents('debug.log', "GitHub Logic Reached!\n", FILE_APPEND);
     switch ($metric) {
         // Case statement for 'lines'
         case (preg_match('/^lines(?:-(added|deleted|all))?$/', $metric, $m) ? true : false):
@@ -864,17 +865,9 @@ if ($type === 'github') {
             $text1 = $L['follower'] ?? 'Followers';
             $text2 = formatNumberShort(gh_user_followers($owner, $ttl, $token));
             break;
-        case 'follower-name':
-            $text1 = $L['follower_name'] ?? 'Last Follower';
-            $text2 = gh_user_follower_name($owner, $ttl, $token);
-            break;
         case 'following':
             $text1 = $L['following'] ?? 'Following';
             $text2 = formatNumberShort(gh_user_following($owner, $ttl, $token));
-            break;
-        case 'following-name':
-            $text1 = $L['following_name'] ?? 'Last Following';
-            $text2 = gh_user_following_name($owner, $ttl, $token);
             break;
         case 'projects':
             $text1 = $L['projects'] ?? 'Projects';
