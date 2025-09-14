@@ -1538,7 +1538,8 @@ if (!function_exists('gh_repo_issues_closed')) {
             return (int)$cached;
         }
 
-        $url = "https://api.github.com/repos/{$owner}/{$repo}/issues?state=closed";
+        // Retrieve all closed items, including pull requests
+        $url = "https://api.github.com/repos/{$owner}/{$repo}/issues?state=closed&per_page=100";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
         if ($token) {
             $opts['http']['header'] .= "Authorization: token $token\r\n";
@@ -1550,10 +1551,20 @@ if (!function_exists('gh_repo_issues_closed')) {
             return 0;
         }
 
-        $issues = json_decode($json, true);
-        $count = (is_array($issues)) ? count($issues) : 0;
+        $items = json_decode($json, true);
+        if (!is_array($items)) {
+            return 0;
+        }
+
+        $closedIssueCount = 0;
+        foreach ($items as $item) {
+            // Only count issues that are not pull requests
+            if (!isset($item['pull_request'])) {
+                $closedIssueCount++;
+            }
+        }
         
-        gh_cache_set($cacheKey, $count);
-        return $count;
+        gh_cache_set($cacheKey, $closedIssueCount);
+        return $closedIssueCount;
     }
 }
