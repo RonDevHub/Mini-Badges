@@ -1499,3 +1499,61 @@ if (!function_exists('gh_all_commit_info')) {
         return $info;
     }
 }
+// ------------------- Open Issues Funktion -------------------
+if (!function_exists('gh_repo_issues_open')) {
+    function gh_repo_issues_open(string $owner, string $repo, int $ttl = 3600, ?string $token = null): int
+    {
+        $cacheKey = "new_robust_issues_open_{$owner}_{$repo}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) {
+            return (int)$cached;
+        }
+
+        $url = "https://api.github.com/repos/{$owner}/{$repo}";
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        if ($token) {
+            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        }
+        $context = stream_context_create($opts);
+
+        $json = @file_get_contents($url, false, $context);
+        if (!$json) {
+            return 0;
+        }
+
+        $repoData = json_decode($json, true);
+        $count = $repoData['open_issues_count'] ?? 0;
+        
+        gh_cache_set($cacheKey, $count);
+        return $count;
+    }
+}
+// ------------------- Closed Issues Funktion -------------------
+if (!function_exists('gh_repo_issues_closed')) {
+    function gh_repo_issues_closed(string $owner, string $repo, int $ttl = 3600, ?string $token = null): int
+    {
+        $cacheKey = "new_robust_issues_closed_{$owner}_{$repo}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) {
+            return (int)$cached;
+        }
+
+        $url = "https://api.github.com/repos/{$owner}/{$repo}/issues?state=closed";
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        if ($token) {
+            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        }
+        $context = stream_context_create($opts);
+
+        $json = @file_get_contents($url, false, $context);
+        if (!$json) {
+            return 0;
+        }
+
+        $issues = json_decode($json, true);
+        $count = (is_array($issues)) ? count($issues) : 0;
+        
+        gh_cache_set($cacheKey, $count);
+        return $count;
+    }
+}
