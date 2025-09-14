@@ -731,6 +731,16 @@ if ($type === 'github') {
             $text1 = $L['issues'] ?? 'Issues';
             $text2 = isset($repoInfo['open_issues_count']) ? formatNumberShort($repoInfo['open_issues_count']) : 'N/A';
             break;
+        case 'issues-open':
+            $text1 = 'Issues';
+            $count = gh_repo_issues_open($owner, $repo, $ttl, $token);
+            $text2 = formatNumberShort($count) . ' open';
+            break;
+        case 'issues-closed':
+            $text1 = 'Issues';
+            $count = gh_repo_issues_closed($owner, $repo, $ttl, $token);
+            $text2 = formatNumberShort($count) . ' closed';
+            break;    
         case 'issues_all':
             $text1 = $L['issues_all'] ?? 'Issues (All)';
             $text2 = formatNumberShort(gh_user_issues_all($owner, $ttl, $token));
