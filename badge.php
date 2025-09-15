@@ -526,6 +526,12 @@ if ($type === 'github') {
     $messagePair = q('messagepair', null);
     $labelPair   = q('labelpair', null);
 
+    if (!empty($config['allowedOwners']) && is_array($config['allowedOwners']) && !in_array($owner, $config['allowedOwners'], true)) {
+        http_response_code(400);
+        echo '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="20"><text x="10" y="15" fill="red">⛔️ ' . ($L['invalid_owner'] ?? 'Invalid owner') . '</text></svg>';
+        exit;
+    }
+
     if (!function_exists('mb_badge_normalize_color')) {
         function mb_badge_normalize_color(?string $raw, string $fallback): string
         {
@@ -732,18 +738,23 @@ if ($type === 'github') {
             $text2 = isset($repoInfo['open_issues_count']) ? formatNumberShort($repoInfo['open_issues_count']) : 'N/A';
             break;
         case 'issues-open':
-            $text1 = 'Issues';
+            $text1 = $L['issues'] ?? 'Issues';
             $count = gh_repo_issues_open($owner, $repo, $ttl, $token);
             $text2 = formatNumberShort($count) . ' open';
             break;
         case 'issues-closed':
-            $text1 = 'Issues';
+            $text1 = $L['issues'] ?? 'Issues';
             $count = gh_repo_issues_closed($owner, $repo, $ttl, $token);
             $text2 = formatNumberShort($count) . ' closed';
-            break;    
+            break;
         case 'issues_all':
             $text1 = $L['issues_all'] ?? 'Issues (All)';
             $text2 = formatNumberShort(gh_user_issues_all($owner, $ttl, $token));
+            break;
+        case 'sponsors':
+            $text1 = 'Sponsors';
+            $count = gh_user_sponsors_count($owner, $ttl, $token);
+            $text2 = formatNumberShort($count);
             break;
         case 'watchers':
             $text1 = $L['watchers'] ?? 'Watchers';
@@ -1039,6 +1050,37 @@ if ($type === 'github') {
                 default:
                     $text1 = $L['push_date'] ?? 'Last Push';
                     $text2 = $pushInfo['latest']['date'] ?? 'N/A';
+                    break;
+            }
+            break;
+        // Case statement for 'discussions'
+        case (preg_match('/^discussions(?:-(lastdate|lastupdate|lasttitle|lastauthor|count))?$/', $metric, $m) ? true : false):
+            $stats = gh_repo_discussions($owner, $repo, $ttl, $token);
+            $text1 = '';
+            $text2 = '';
+            $type = $m[1] ?? 'count'; // Default auf count
+
+            switch ($type) {
+                case 'lastdate':
+                    $text1 = $L['discussions_lastdate'] ?? 'Last Discussion Date';
+                    $text2 = $stats['last']['createdAt'] ?? 'N/A';
+                    break;
+                case 'lastupdate':
+                    $text1 = $L['discussions_lastupdate'] ?? 'Last Discussion Update';
+                    $text2 = $stats['last']['updatedAt'] ?? 'N/A';
+                    break;
+                case 'lasttitle':
+                    $text1 = $L['discussions_lasttitle'] ?? 'Last Discussion Title';
+                    $text2 = $stats['last']['title'] ?? 'N/A';
+                    break;
+                case 'lastauthor':
+                    $text1 = $L['discussions_lastauthor'] ?? 'Last Discussion Author';
+                    $text2 = $stats['last']['author'] ?? 'N/A';
+                    break;
+                case 'count':
+                default:
+                    $text1 = $L['discussions_count'] ?? 'Discussions';
+                    $text2 = formatNumberShort($stats['count']);
                     break;
             }
             break;
