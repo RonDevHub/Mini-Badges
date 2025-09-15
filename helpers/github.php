@@ -1523,7 +1523,7 @@ if (!function_exists('gh_repo_issues_open')) {
 
         $repoData = json_decode($json, true);
         $count = $repoData['open_issues_count'] ?? 0;
-        
+
         gh_cache_set($cacheKey, $count);
         return $count;
     }
@@ -1563,8 +1563,147 @@ if (!function_exists('gh_repo_issues_closed')) {
                 $closedIssueCount++;
             }
         }
-        
+
         gh_cache_set($cacheKey, $closedIssueCount);
         return $closedIssueCount;
+    }
+}
+// ---------------- Sponsor Count -----------------------
+if (!function_exists('gh_user_sponsors_count')) {
+    function gh_user_sponsors_count(string $username, int $ttl = 3600, ?string $token = null): int
+    {
+        $cacheKey = "gh_sponsors_count_{$username}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) {
+            return (int)$cached;
+        }
+
+        if (!$token) {
+            return 0; // Token erforderlich
+        }
+
+        $query = <<<GQL
+query {
+  user(login: "{$username}") {
+    sponsorshipsAsMaintainer {
+      totalCount
+    }
+  }
+}
+GQL;
+
+        $ch = curl_init('https://api.github.com/graphql');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: bearer ' . $token,
+            'User-Agent: MiniBadges/1.0'
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['query' => $query]));
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        $data = json_decode($response, true);
+        $count = $data['data']['user']['sponsorshipsAsMaintainer']['totalCount'] ?? 0;
+
+        gh_cache_set($cacheKey, $count);
+        return (int)$count;
+    }
+}
+// ----------------- Discussions ----------------------
+if (!function_exists('gh_repo_discussions')) {
+    /**
+     * Liefert wichtige Informationen zu Discussions eines Repositories
+     * @param string $owner GitHub Owner
+     * @param string $repo GitHub Repository
+     * @param int $ttl Cache-Zeit in Sekunden
+     * @param string|null $token GitHub Token
+     * @return array
+     * [
+     *   'count' => int,
+     *   'last' => [
+     *       'title' => string,
+     *       'author' => string,
+     *       'createdAt' => string,
+     *       'updatedAt' => string,
+     *       'commentsCount' => int
+     *   ]
+     * ]
+     */
+    function gh_repo_discussions(string $owner, string $repo, int $ttl = 3600, ?string $token = null): array
+    {
+        $cacheKey = "gh_discussions_{$owner}_{$repo}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        if (!$token) {
+            return ['count' => 0, 'last' => null];
+        }
+
+        $query = <<<GQL
+query {
+  repository(owner: "{$owner}", name: "{$repo}") {
+    discussions(first: 1, orderBy: {field: CREATED_AT, direction: DESC}) {
+      totalCount
+      nodes {
+        title
+        createdAt
+        updatedAt
+        author {
+          login
+        }
+        comments(first: 0) {
+          totalCount
+        }
+      }
+    }
+  }
+}
+GQL;
+
+        $ch = curl_init('https://api.github.com/graphql');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: bearer ' . $token,
+            'User-Agent: MiniBadges/1.0'
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['query' => $query]));
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        $data = json_decode($response, true);
+        $discussionData = $data['data']['repository']['discussions'] ?? null;
+
+        $lastDiscussion = null;
+        if (isset($discussionData['nodes'][0])) {
+            $node = $discussionData['nodes'][0];
+
+            // kleine Hilfsfunktion für Datumsformatierung
+            $formatDate = function ($dateStr) {
+                if (!$dateStr) return '';
+                $dt = new DateTime($dateStr);
+                return $dt->format('Y-m-d H:i:s');
+            };
+
+            $lastDiscussion = [
+                'title'        => $node['title'] ?? '',
+                'author'       => $node['author']['login'] ?? '',
+                'createdAt'    => isset($node['createdAt']) ? $formatDate($node['createdAt']) : '',
+                'updatedAt'    => isset($node['updatedAt']) ? $formatDate($node['updatedAt']) : '',
+                'commentsCount' => $node['comments']['totalCount'] ?? 0
+            ];
+        }
+
+
+        $result = [
+            'count' => $discussionData['totalCount'] ?? 0,
+            'last' => $lastDiscussion
+        ];
+
+        gh_cache_set($cacheKey, $result);
+        return $result;
     }
 }
