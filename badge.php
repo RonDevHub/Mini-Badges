@@ -518,7 +518,7 @@ if ($type === 'github') {
     $repo   = q('repo', 'Mini-Badges');
     $metric = q('metric', 'stars');
     $ttl    = (int)$config['cacheTime'];
-    $token  = $config['githubToken'] ?: null;
+    $ghtoken  = $config['githubToken'] ?: null;
     $namedColors = $config['colors'];
     // Route-pairs (from .htaccess)
     $iconPair    = q('iconpair', null);
@@ -528,7 +528,7 @@ if ($type === 'github') {
 
     if (!empty($config['allowedOwners']) && is_array($config['allowedOwners']) && !in_array($owner, $config['allowedOwners'], true)) {
         http_response_code(400);
-        echo '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="20"><text x="10" y="15" fill="red">⛔️ ' . ($L['invalid_owner'] ?? 'Invalid owner') . '</text></svg>';
+        echo '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="20"><text x="10" y="15" fill="red">⛔️ Invalid owner</text></svg>';
         exit;
     }
 
@@ -649,13 +649,13 @@ if ($type === 'github') {
         }
     }
     // ------------------- Repo Info -------------------
-    $repoInfo = gh_repo_info($owner, $repo, $ttl, $token);
+    $repoInfo = gh_repo_info($owner, $repo, $ttl, $ghtoken);
 
     // ------------------- Switch Metric -------------------
     switch ($metric) {
         // Case statement for 'lines'
         case (preg_match('/^lines(?:-(added|deleted|all))?$/', $metric, $m) ? true : false):
-            $stats = gh_repo_lines($owner, $repo, $ttl, $token);
+            $stats = gh_repo_lines($owner, $repo, $ttl, $ghtoken);
             $text1 = '';
             $text2 = '';
             $type = $m[1] ?? 'all';
@@ -686,16 +686,16 @@ if ($type === 'github') {
                 switch ($type) {
                     case 'open':
                         $text1 = $L['milestones_open'] ?? 'Milestones (Open)';
-                        $text2 = formatNumberShort(gh_repo_milestones_robust($owner, $repo, $ttl, $token, 'open'));
+                        $text2 = formatNumberShort(gh_repo_milestones_robust($owner, $repo, $ttl, $ghtoken, 'open'));
                         break;
                     case 'closed':
                         $text1 = $L['milestones_closed'] ?? 'Milestones (Closed)';
-                        $text2 = formatNumberShort(gh_repo_milestones_robust($owner, $repo, $ttl, $token, 'closed'));
+                        $text2 = formatNumberShort(gh_repo_milestones_robust($owner, $repo, $ttl, $ghtoken, 'closed'));
                         break;
                     case 'default':
                     default:
                         $text1 = $L['milestones'] ?? 'Milestones';
-                        $text2 = formatNumberShort(gh_repo_milestones_robust($owner, $repo, $ttl, $token, 'all'));
+                        $text2 = formatNumberShort(gh_repo_milestones_robust($owner, $repo, $ttl, $ghtoken, 'all'));
                         break;
                 }
             }
@@ -704,15 +704,15 @@ if ($type === 'github') {
                 switch ($type) {
                     case 'all':
                         $text1 = $L['milestones_all'] ?? 'Milestones (All)';
-                        $text2 = formatNumberShort(gh_user_milestones_all($owner, $ttl, $token, 'all'));
+                        $text2 = formatNumberShort(gh_user_milestones_all($owner, $ttl, $ghtoken, 'all'));
                         break;
                     case 'allopen':
                         $text1 = $L['milestones_allopen'] ?? 'Milestones (All Open)';
-                        $text2 = formatNumberShort(gh_user_milestones_all($owner, $ttl, $token, 'open'));
+                        $text2 = formatNumberShort(gh_user_milestones_all($owner, $ttl, $ghtoken, 'open'));
                         break;
                     case 'allclosed':
                         $text1 = $L['milestones_allclosed'] ?? 'Milestones (All Closed)';
-                        $text2 = formatNumberShort(gh_user_milestones_all($owner, $ttl, $token, 'closed'));
+                        $text2 = formatNumberShort(gh_user_milestones_all($owner, $ttl, $ghtoken, 'closed'));
                         break;
                 }
             }
@@ -723,7 +723,7 @@ if ($type === 'github') {
             break;
         case 'stars-all':
             $text1 = $L['stars_all'] ?? 'Stars (All)';
-            $text2 = formatNumberShort(gh_user_stars_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_stars_all($owner, $ttl, $ghtoken));
             break;
         case 'forks':
             $text1 = $L['forks'] ?? 'Forks';
@@ -731,7 +731,7 @@ if ($type === 'github') {
             break;
         case 'forks-all':
             $text1 = $L['forks_all'] ?? 'Forks (All)';
-            $text2 = formatNumberShort(gh_user_forks_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_forks_all($owner, $ttl, $ghtoken));
             break;
         case 'issues':
             $text1 = $L['issues'] ?? 'Issues';
@@ -739,21 +739,21 @@ if ($type === 'github') {
             break;
         case 'issues-open':
             $text1 = $L['issues'] ?? 'Issues';
-            $count = gh_repo_issues_open($owner, $repo, $ttl, $token);
+            $count = gh_repo_issues_open($owner, $repo, $ttl, $ghtoken);
             $text2 = formatNumberShort($count) . ' open';
             break;
         case 'issues-closed':
             $text1 = $L['issues'] ?? 'Issues';
-            $count = gh_repo_issues_closed($owner, $repo, $ttl, $token);
+            $count = gh_repo_issues_closed($owner, $repo, $ttl, $ghtoken);
             $text2 = formatNumberShort($count) . ' closed';
             break;
         case 'issues_all':
             $text1 = $L['issues_all'] ?? 'Issues (All)';
-            $text2 = formatNumberShort(gh_user_issues_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_issues_all($owner, $ttl, $ghtoken));
             break;
         case 'sponsors':
             $text1 = 'Sponsors';
-            $count = gh_user_sponsors_count($owner, $ttl, $token);
+            $count = gh_user_sponsors_count($owner, $ttl, $ghtoken);
             $text2 = formatNumberShort($count);
             break;
         case 'watchers':
@@ -764,31 +764,31 @@ if ($type === 'github') {
             break;
         case 'watchers_all':
             $text1 = $L['watchers_all'] ?? 'Watchers (All)';
-            $text2 = formatNumberShort(gh_user_watchers_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_watchers_all($owner, $ttl, $ghtoken));
             break;
         case 'downloads':
             $text1 = $L['downloads'] ?? 'Downloads';
-            $text2 = formatNumberShort(gh_repo_downloads($owner, $repo, $ttl, $token));
+            $text2 = formatNumberShort(gh_repo_downloads($owner, $repo, $ttl, $ghtoken));
             break;
         case 'downloads-latest':
             $text1 = $L['downloads_latest'] ?? 'Downloads Latest Release';
-            $text2 = formatNumberShort(gh_repo_downloads_latest($owner, $repo, $ttl, $token));
+            $text2 = formatNumberShort(gh_repo_downloads_latest($owner, $repo, $ttl, $ghtoken));
             break;
         case 'downloads-all':
             $text1 = $L['downloads_all'] ?? 'Downloads (All)';
-            $text2 = formatNumberShort(gh_user_downloads_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_downloads_all($owner, $ttl, $ghtoken));
             break;
         case 'branches':
             $text1 = $L['branches'] ?? 'Branches';
-            $text2 = formatNumberShort(gh_repo_branches($owner, $repo, $ttl, $token));
+            $text2 = formatNumberShort(gh_repo_branches($owner, $repo, $ttl, $ghtoken));
             break;
         case 'branches-all':
             $text1 = $L['branches_all'] ?? 'Branches (All)';
-            $text2 = formatNumberShort(gh_user_branches_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_branches_all($owner, $ttl, $ghtoken));
             break;
         case 'release':
             $text1 = $L['release'] ?? 'Release';
-            $rel = gh_repo_release($owner, $repo, $ttl, $token);
+            $rel = gh_repo_release($owner, $repo, $ttl, $ghtoken);
             $text2 = $rel['tag_name'] ?? ($repoInfo['default_branch'] ?? 'N/A');
             break;
         case 'license':
@@ -797,7 +797,7 @@ if ($type === 'github') {
             break;
         case 'top_language':
             $text1 = $L['top_language'] ?? 'Top language';
-            $text2 = gh_top_language($owner, $repo, $ttl, $token) ?? 'N/A';
+            $text2 = gh_top_language($owner, $repo, $ttl, $ghtoken) ?? 'N/A';
             break;
         case 'size':
             $text1 = $L['size'] ?? 'Size';
@@ -805,7 +805,7 @@ if ($type === 'github') {
             break;
         case 'size_all':
             $text1 = $L['size_all'] ?? 'Size (All)';
-            $text2 = formatNumberShort(gh_user_size_all($owner, $ttl, $token)) . ' KB';
+            $text2 = formatNumberShort(gh_user_size_all($owner, $ttl, $ghtoken)) . ' KB';
             break;
         case 'created_at':
             $text1 = $L['created_at'] ?? 'Created';
@@ -813,11 +813,11 @@ if ($type === 'github') {
             break;
         case 'repos_count':
             $text1 = $L['repos_count'] ?? 'Public Repos';
-            $text2 = formatNumberShort(gh_user_repos_count($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_repos_count($owner, $ttl, $ghtoken));
             break;
         case (preg_match('/^top_languages_all(?:-(\d+))?$/', $metric, $m) ? true : false):
             $limit = isset($m[1]) ? (int)$m[1] : 1;
-            $langs = gh_user_top_languages_all($owner, $ttl, $token, $limit);
+            $langs = gh_user_top_languages_all($owner, $ttl, $ghtoken, $limit);
             if ($limit === 1) {
                 $text1 = $langs[0][0];
                 $text2 = $langs[0][1];
@@ -835,19 +835,19 @@ if ($type === 'github') {
             break;
         case 'prs':
             $text1 = $L['pull_requests'] ?? 'Pull requests';
-            $text2 = formatNumberShort(gh_repo_pull_requests($owner, $repo, $ttl, $token));
+            $text2 = formatNumberShort(gh_repo_pull_requests($owner, $repo, $ttl, $ghtoken));
             break;
         case 'prs-merged':
             $text1 = $L['prs_merged'] ?? 'Merged PRs';
-            $text2 = formatNumberShort(gh_repo_merged_pull_requests($owner, $repo, $ttl, $token));
+            $text2 = formatNumberShort(gh_repo_merged_pull_requests($owner, $repo, $ttl, $ghtoken));
             break;
         case 'prs-mergedall':
             $text1 = $L['prs_merged_all'] ?? 'Merged PRs (All)';
-            $text2 = formatNumberShort(gh_user_merged_pull_requests_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_merged_pull_requests_all($owner, $ttl, $ghtoken));
             break;
         case 'prs-all':
             $text1 = $L['pull_requests_all'] ?? 'PRs (All)';
-            $text2 = formatNumberShort(gh_user_pull_requests_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_pull_requests_all($owner, $ttl, $ghtoken));
             break;
         case 'subscribers':
             $text1 = $L['subscribers_count'] ?? 'Subscribers';
@@ -855,58 +855,58 @@ if ($type === 'github') {
             break;
         case 'subscribers-all':
             $text1 = $L['subscribers_count_all'] ?? 'Subscribers (All)';
-            $text2 = formatNumberShort(gh_user_subscribers_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_subscribers_all($owner, $ttl, $ghtoken));
             break;
         case 'successrate':
             $text1 = $L['success_rate'] ?? 'Success Rate';
-            $text2 = gh_repo_success_rate($owner, $repo, $ttl, $token);
+            $text2 = gh_repo_success_rate($owner, $repo, $ttl, $ghtoken);
             break;
         case 'successrate-all':
             $text1 = $L['success_rate_all'] ?? 'Success Rate (All)';
-            $text2 = gh_user_success_rate_all($owner, $ttl, $token);
+            $text2 = gh_user_success_rate_all($owner, $ttl, $ghtoken);
             break;
         case 'files':
             $text1 = $L['files'] ?? 'Files';
-            $text2 = formatNumberShort(gh_repo_files($owner, $repo, $ttl, $token));
+            $text2 = formatNumberShort(gh_repo_files($owner, $repo, $ttl, $ghtoken));
             break;
         case 'files-all':
             $text1 = $L['files_all'] ?? 'Files (All)';
-            $text2 = formatNumberShort(gh_user_files_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_files_all($owner, $ttl, $ghtoken));
             break;
         case 'tags':
             $text1 = $L['tags'] ?? 'Tags';
-            $text2 = formatNumberShort(gh_repo_tags($owner, $repo, $ttl, $token));
+            $text2 = formatNumberShort(gh_repo_tags($owner, $repo, $ttl, $ghtoken));
             break;
         case 'tags-all':
             $text1 = $L['tags_all'] ?? 'Tags (All)';
-            $text2 = formatNumberShort(gh_user_tags_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_tags_all($owner, $ttl, $ghtoken));
             break;
         case 'follower':
             $text1 = $L['follower'] ?? 'Followers';
-            $text2 = formatNumberShort(gh_user_followers($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_followers($owner, $ttl, $ghtoken));
             break;
         case 'following':
             $text1 = $L['following'] ?? 'Following';
-            $text2 = formatNumberShort(gh_user_following($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_following($owner, $ttl, $ghtoken));
             break;
         case 'projects':
             $text1 = $L['projects'] ?? 'Projects';
-            $text2 = formatNumberShort(gh_repo_projects($owner, $repo, $ttl, $token));
+            $text2 = formatNumberShort(gh_repo_projects($owner, $repo, $ttl, $ghtoken));
             break;
         case 'projects-all':
             $text1 = $L['projects_all'] ?? 'Projects (All)';
-            $text2 = formatNumberShort(gh_user_projects_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_projects_all($owner, $ttl, $ghtoken));
             break;
         case 'releases':
             $text1 = $L['releases'] ?? 'Releases';
-            $text2 = formatNumberShort(gh_repo_releases($owner, $repo, $ttl, $token));
+            $text2 = formatNumberShort(gh_repo_releases($owner, $repo, $ttl, $ghtoken));
             break;
         case 'releases_all':
             $text1 = $L['releases_all'] ?? 'Releases (All)';
-            $text2 = formatNumberShort(gh_user_releases_all($owner, $ttl, $token));
+            $text2 = formatNumberShort(gh_user_releases_all($owner, $ttl, $ghtoken));
             break;
         case (preg_match('/^gists(?:-(list|size|date|forks|listall|list(\d+))|-(size|forks)@(.+))?$/', $metric, $m) ? true : false):
-            $gists_info = gh_user_gists_info($owner, $ttl, $token);
+            $gists_info = gh_user_gists_info($owner, $ttl, $ghtoken);
             $text1 = '';
             $text2 = '';
             // Check for specific formats (e.g. 'size@' or 'forks@')
@@ -930,7 +930,7 @@ if ($type === 'github') {
                         $text1 = $L['gist_size'] ?? "Gist: {$gist_name}";
                         $text2 = formatSizeShort($found_gist['size']);
                     } else { // type === 'forks'
-                        $forks_count = gh_gist_forks_count($found_gist['id'], $ttl, $token);
+                        $forks_count = gh_gist_forks_count($found_gist['id'], $ttl, $ghtoken);
                         $text1 = $L['gist_forks'] ?? "Gist: {$gist_name}";
                         $text2 = formatNumberShort($forks_count);
                     }
@@ -976,7 +976,7 @@ if ($type === 'github') {
                     case 'forks':
                         $total_forks = 0;
                         foreach ($gists_info['gists'] as $gist) {
-                            $total_forks += gh_gist_forks_count($gist['id'], $ttl, $token);
+                            $total_forks += gh_gist_forks_count($gist['id'], $ttl, $ghtoken);
                         }
                         $text1 = $L['gists_forks'] ?? 'Gist Forks';
                         $text2 = formatNumberShort($total_forks);
@@ -994,7 +994,7 @@ if ($type === 'github') {
                 $text1 = $L['version_check'] ?? 'Version Check';
                 $text2 = $L['no_version_found'] ?? 'No version provided';
             } else {
-                $comparison = gh_repo_compare_version($owner, $repo, $current_version, $ttl, $token);
+                $comparison = gh_repo_compare_version($owner, $repo, $current_version, $ttl, $ghtoken);
                 switch ($comparison['status']) {
                     case 'ok':
                         $text1 = $L['check_release'] ?? 'Check Release';
@@ -1014,7 +1014,7 @@ if ($type === 'github') {
             break;
         case (preg_match('/^top_language_count(?:-(\d+))?$/', $metric, $m) ? true : false):
             $limit = isset($m[1]) ? (int)$m[1] : 1;
-            $langs = gh_top_language_count($owner, $repo, $ttl, $token, $limit);
+            $langs = gh_top_language_count($owner, $repo, $ttl, $ghtoken, $limit);
             if ($limit === 1) {
                 $text1 = $langs[0][0];
                 $text2 = $langs[0][1];
@@ -1029,7 +1029,7 @@ if ($type === 'github') {
             $subMetric = $m[1] ?? 'default';
             $text1 = '';
             $text2 = '';
-            $pushInfo = gh_push_info($owner, $repo, $ttl, $token);
+            $pushInfo = gh_push_info($owner, $repo, $ttl, $ghtoken);
             switch ($subMetric) {
                 case 'time':
                     $text1 = $L['push_time'] ?? 'Last Push';
@@ -1055,7 +1055,7 @@ if ($type === 'github') {
             break;
         // Case statement for 'discussions'
         case (preg_match('/^discussions(?:-(lastdate|lastupdate|lasttitle|lastauthor|count))?$/', $metric, $m) ? true : false):
-            $stats = gh_repo_discussions($owner, $repo, $ttl, $token);
+            $stats = gh_repo_discussions($owner, $repo, $ttl, $ghtoken);
             $text1 = '';
             $text2 = '';
             $type = $m[1] ?? 'count'; // Default auf count
@@ -1088,7 +1088,7 @@ if ($type === 'github') {
             $subMetric = $m[1] ?? 'default';
             $text1 = '';
             $text2 = '';
-            $commitInfo = gh_commit_info($owner, $repo, $ttl, $token);
+            $commitInfo = gh_commit_info($owner, $repo, $ttl, $ghtoken);
             switch ($subMetric) {
                 case 'time':
                     $text1 = $L['commit_time'] ?? 'Last Commit';
@@ -1110,6 +1110,58 @@ if ($type === 'github') {
                     $text1 = $L['commit_date'] ?? 'Last Commit';
                     $text2 = $commitInfo['latest']['date'] ?? 'N/A';
                     break;
+            }
+            break;
+        case (preg_match('/^commits(?:-(all|last|last-info))?(?:@([\w\-\_]+))?$/', $metric, $m) ? true : false):
+            $text1 = '';
+            $text2 = '';
+            $type = $m[1] ?? 'repo';
+            $branchFilter = $m[2] ?? null;
+            switch ($type) {
+                case 'all':
+                    $stats = gh_user_commits_complete($owner, $ttl, $ghtoken);
+                    $text1 = $L['commits_all'] ?? 'Commits';
+                    $text2 = formatNumberShort($stats['total']);
+                    break;
+                case 'last':
+                    $stats = gh_user_commits_complete($owner, $ttl, $ghtoken);
+                    $text1 = $L['commits_last'] ?? 'Last Commit';
+                    $text2 = $stats['last']['date'] ?? 'N/A';
+                    break;
+                case 'last-info':
+                    $stats = gh_user_commits_complete($owner, $ttl, $ghtoken);
+                    $text1 = $L['commits_last_info'] ?? 'Last Commit Info';
+                    if ($stats['last']) {
+                        $text2 = $stats['last']['date'] .
+                            " | +{$stats['last']['lines_added']} -{$stats['last']['lines_deleted']}";
+                    } else {
+                        $text2 = 'N/A';
+                    }
+                    break;
+                case 'repo':
+                default:
+                    $count = gh_repo_commits_complete($owner, $repo, $ttl, $ghtoken, $branchFilter);
+                    $text1 = $L['commits_repo'] ?? 'Commits';
+                    if ($branchFilter) {
+                        $text1 .= " ($branchFilter)";
+                    }
+                    if ($count === -1) {
+                        $text2 = "Branch not found";
+                    } else {
+                        $text2 = formatNumberShort($count);
+                    }
+                    break;
+            }
+            break;
+        case (preg_match('/^codesize(?:-all)?$/', $metric) ? true : false):
+            if (str_starts_with($metric, 'codesize-all')) {
+                $bytes = gh_user_codesize_all($owner, $ttl, $ghtoken);
+                $text1 = $L['codesize_all'] ?? 'Code Size (All Repos)';
+                $text2 = formatBytesShort($bytes);
+            } else {
+                $bytes = gh_repo_codesize($owner, $repo, $ttl, $ghtoken);
+                $text1 = $L['codesize_repo'] ?? 'Code Size';
+                $text2 = formatBytesShort($bytes);
             }
             break;
         default:
