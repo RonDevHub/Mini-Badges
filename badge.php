@@ -1164,6 +1164,56 @@ if ($type === 'github') {
                 $text2 = formatBytesShort($bytes);
             }
             break;
+         case 'name':
+            $user = gh_user_fullinfo($owner, $ttl, $ghtoken);
+            $text1 = $L['name_label'] ?? 'Hello, my name is';
+            $text2 = $user['name'] ?? $user['login'] ?? 'Unknown';
+            break;
+        case 'company':
+            $user = gh_user_fullinfo($owner, $ttl, $ghtoken);
+            $text1 = $L['company_label'] ?? 'Company';
+            $text2 = $user['company'] ?? ($L['no_value'] ?? 'No value set');
+            break;
+        case 'location':
+            $user = gh_user_fullinfo($owner, $ttl, $ghtoken);
+            $text1 = $L['location_label'] ?? "I'm from";
+            $text2 = $user['location'] ?? ($L['no_value'] ?? 'Somewhere in the matrix 🌌');
+            break;
+        case 'status':
+            $user = gh_user_fullinfo($owner, $ttl, $ghtoken);
+            $text1 = $L['status_label'] ?? 'Status';
+            if (!empty($user['status'])) {
+                $text2 = ($user['status']['emoji'] ?? '') . ' ' . ($user['status']['message'] ?? '');
+            } else {
+                $text2 = $L['no_status'] ?? 'No status set';
+            }
+            break;
+        case (preg_match('/^(created|updated)At(?:-since)?$/', $metric, $m) ? true : false):
+            $user = gh_user_fullinfo($owner, $ttl, $ghtoken);
+            $field = $m[1] . 'At';
+            $dateStr = $user[$field] ?? null;
+
+            if (!$dateStr) {
+                $text1 = $m[1] === 'created' ? ($L['account_created'] ?? 'Account created') : ($L['last_updated'] ?? 'Last updated');
+                $text2 = $L['no_value'] ?? 'N/A';
+                break;
+            }
+            $date = new DateTime($dateStr);
+            if (str_ends_with($metric, '-since')) {
+                $now = new DateTime();
+                $diff = $now->diff($date);
+                if ($diff->y > 0) {
+                    $text2 = $diff->y . ' ' . ($diff->y > 1 ? ($L['time_year_plural'] ?? 'years') : ($L['time_year_singular'] ?? 'year'));
+                } elseif ($diff->m > 0) {
+                    $text2 = $diff->m . ' ' . ($diff->m > 1 ? ($L['time_month_plural'] ?? 'months') : ($L['time_month_singular'] ?? 'month'));
+                } else {
+                    $text2 = $diff->d . ' ' . ($diff->d > 1 ? ($L['time_day_plural'] ?? 'days') : ($L['time_day_singular'] ?? 'day'));
+                }
+            } else {
+                $text2 = $date->format('Y-m-d');
+            }
+            $text1 = $m[1] === 'created' ? ($L['account_created'] ?? 'Account created') : ($L['last_updated'] ?? 'Last updated');
+            break;
         default:
             $text1 = 'Metric';
             $text2 = 'N/A';
