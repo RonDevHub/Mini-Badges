@@ -1928,3 +1928,57 @@ if (!function_exists('gh_user_codesize_all')) {
         return $total;
     }
 }
+// ----------------- Profil Infos --------------------
+if (!function_exists('gh_user_fullinfo')) {
+    function gh_user_fullinfo(string $username, int $ttl = 3600, ?string $ghtoken = null): array {
+        $cacheKey = "gh_user_fullinfo_{$username}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) return $cached;
+
+        if (!$ghtoken) return [];
+
+        $opts = [
+            "http" => [
+                "header" => "User-Agent: MiniBadges/1.0\r\nAuthorization: bearer {$ghtoken}\r\n",
+                "method" => "POST",
+            ]
+        ];
+
+        $query = json_encode([
+            "query" => <<<GQL
+query {
+  user(login: "{$username}") {
+    login
+    name
+    company
+    location
+    createdAt
+    updatedAt
+    status {
+      emoji
+      message
+      updatedAt
+    }
+  }
+}
+GQL
+        ]);
+
+        $opts['http']['header'] .= "Content-Type: application/json\r\n";
+        $opts['http']['content'] = $query;
+        $context = stream_context_create($opts);
+
+        $url = "https://api.github.com/graphql";
+        $result = @file_get_contents($url, false, $context);
+        $data = $result ? json_decode($result, true) : [];
+
+        if (!isset($data['data']['user'])) {
+            return [];
+        }
+
+        $user = $data['data']['user'];
+        gh_cache_set($cacheKey, $user);
+        return $user;
+    }
+}
+
