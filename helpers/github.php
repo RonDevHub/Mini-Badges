@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../badge.php';
 function gh_cache_path(string $key): string
 {
     return dirname(__DIR__) . '/cache/' . preg_replace('~[^a-zA-Z0-9_.-]~', '_', $key) . '.json';
 }
 
-function gh_cached_get(string $url, int $ttl, ?string $token = null): ?array
+function gh_cached_get(string $url, int $ttl, ?string $ghtoken = null): ?array
 {
     $cache = gh_cache_path(sha1($url));
     if (is_file($cache) && (time() - filemtime($cache) < $ttl)) {
@@ -15,7 +16,7 @@ function gh_cached_get(string $url, int $ttl, ?string $token = null): ?array
         'User-Agent: MiniBadges/1.0',
         'Accept: application/vnd.github+json'
     ];
-    if ($token) $headers[] = 'Authorization: Bearer ' . $token;
+    if ($ghtoken) $headers[] = 'Authorization: Bearer ' . $ghtoken;
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -47,24 +48,24 @@ function gh_cached_get(string $url, int $ttl, ?string $token = null): ?array
     }
     return null;
 }
-function gh_repo_info(string $owner, string $repo, int $ttl, ?string $token): ?array
+function gh_repo_info(string $owner, string $repo, int $ttl, ?string $ghtoken): ?array
 {
     $url = "https://api.github.com/repos/$owner/$repo";
-    return gh_cached_get($url, $ttl, $token);
+    return gh_cached_get($url, $ttl, $ghtoken);
 }
-function gh_repo_release(string $owner, string $repo, int $ttl, ?string $token): ?array
+function gh_repo_release(string $owner, string $repo, int $ttl, ?string $ghtoken): ?array
 {
     $url = "https://api.github.com/repos/$owner/$repo/releases/latest";
-    return gh_cached_get($url, $ttl, $token);
+    return gh_cached_get($url, $ttl, $ghtoken);
 }
-function gh_repo_languages(string $owner, string $repo, int $ttl, ?string $token): ?array
+function gh_repo_languages(string $owner, string $repo, int $ttl, ?string $ghtoken): ?array
 {
     $url = "https://api.github.com/repos/$owner/$repo/languages";
-    return gh_cached_get($url, $ttl, $token);
+    return gh_cached_get($url, $ttl, $ghtoken);
 }
-function gh_top_language(string $owner, string $repo, int $ttl, ?string $token): ?string
+function gh_top_language(string $owner, string $repo, int $ttl, ?string $ghtoken): ?string
 {
-    $langs = gh_repo_languages($owner, $repo, $ttl, $token);
+    $langs = gh_repo_languages($owner, $repo, $ttl, $ghtoken);
     if (!$langs || !is_array($langs) || empty($langs)) return null;
     arsort($langs);
     foreach ($langs as $name => $bytes) {
@@ -90,14 +91,27 @@ function formatNumberShort($num)
     if ($num >= 1000) return number_format($num / 1000, ($num % 1000 === 0) ? 0 : 1) . 'k';
     return (string)$num;
 }
+if (!function_exists('formatBytesShort')) {
+    function formatBytesShort(int $bytes): string {
+        if ($bytes < 1024) {
+            return $bytes . ' B';
+        } elseif ($bytes < 1048576) {
+            return round($bytes / 1024, 1) . ' KB';
+        } elseif ($bytes < 1073741824) {
+            return round($bytes / 1048576, 1) . ' MB';
+        }
+        return round($bytes / 1073741824, 1) . ' GB';
+    }
+}
+
 // ------------------- Functions of the metrics -------------------
 // ------------------- Top Language Count Function -------------------
 if (!function_exists('gh_top_language_count')) {
-    function gh_top_language_count(string $owner, string $repo, int $ttl = 300, ?string $token = null, int $limit = 1): array
+    function gh_top_language_count(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null, int $limit = 1): array
     {
         $url = "https://api.github.com/repos/$owner/$repo/languages";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
         if ($json === false) return [['-', '0%']];
@@ -117,7 +131,7 @@ if (!function_exists('gh_top_language_count')) {
 }
 // ------------------- Stars Function (All) -------------------
 if (!function_exists('gh_user_stars_all')) {
-    function gh_user_stars_all(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_stars_all(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "stars_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -129,8 +143,8 @@ if (!function_exists('gh_user_stars_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -152,7 +166,7 @@ if (!function_exists('gh_user_stars_all')) {
 }
 // ------------------- Downloads function (incl. limit) -------------------
 if (!function_exists('gh_repo_downloads')) {
-    function gh_repo_downloads(string $owner, string $repo, int $ttl = 300, ?string $token = null, int $limit = 0): int
+    function gh_repo_downloads(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null, int $limit = 0): int
     {
         $cacheKey = "downloads_{$owner}_{$repo}_limit{$limit}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -160,7 +174,7 @@ if (!function_exists('gh_repo_downloads')) {
 
         $url = "https://api.github.com/repos/$owner/$repo/releases";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
         if (!$json) return 0;
@@ -184,13 +198,13 @@ if (!function_exists('gh_repo_downloads')) {
     }
 }
 if (!function_exists('gh_repo_downloads_latest')) {
-    function gh_repo_downloads_latest(string $owner, string $repo, int $ttl = 300, ?string $token = null): int
+    function gh_repo_downloads_latest(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null): int
     {
-        return gh_repo_downloads($owner, $repo, $ttl, $token, 1);
+        return gh_repo_downloads($owner, $repo, $ttl, $ghtoken, 1);
     }
 }
 if (!function_exists('gh_user_downloads_all')) {
-    function gh_user_downloads_all(string $user, int $ttl = 3600, ?string $token = null, int $releasesLimit = 0): int
+    function gh_user_downloads_all(string $user, int $ttl = 3600, ?string $ghtoken = null, int $releasesLimit = 0): int
     {
         $cacheKey = "downloads_all_{$user}_limit{$releasesLimit}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -200,7 +214,7 @@ if (!function_exists('gh_user_downloads_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
             if (!$json) break;
@@ -210,7 +224,7 @@ if (!function_exists('gh_user_downloads_all')) {
             foreach ($repos as $r) {
                 $ownerR = $r['owner']['login'];
                 $repoR  = $r['name'];
-                $sum += gh_repo_downloads($ownerR, $repoR, $ttl, $token, $releasesLimit);
+                $sum += gh_repo_downloads($ownerR, $repoR, $ttl, $ghtoken, $releasesLimit);
             }
             $page++;
         } while (count($repos) === 100);
@@ -220,14 +234,14 @@ if (!function_exists('gh_user_downloads_all')) {
 }
 // ------------------- Branches function -------------------
 if (!function_exists('gh_repo_branches')) {
-    function gh_repo_branches(string $owner, string $repo, int $ttl = 300, ?string $token = null): int
+    function gh_repo_branches(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null): int
     {
         $cacheKey = "branches_{$owner}_{$repo}";
         $cached = gh_cache_get($cacheKey, $ttl);
         if ($cached !== null) return (int)$cached;
         $url = "https://api.github.com/repos/$owner/$repo/branches?per_page=100";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
         if (!$json) return 0;
@@ -239,7 +253,7 @@ if (!function_exists('gh_repo_branches')) {
     }
 }
 if (!function_exists('gh_user_branches_all')) {
-    function gh_user_branches_all(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_branches_all(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "branches_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -249,7 +263,7 @@ if (!function_exists('gh_user_branches_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
             if (!$json) break;
@@ -258,7 +272,7 @@ if (!function_exists('gh_user_branches_all')) {
             foreach ($repos as $r) {
                 $ownerR = $r['owner']['login'];
                 $repoR  = $r['name'];
-                $sum += gh_repo_branches($ownerR, $repoR, $ttl, $token);
+                $sum += gh_repo_branches($ownerR, $repoR, $ttl, $ghtoken);
             }
             $page++;
         } while (count($repos) === 100);
@@ -268,7 +282,7 @@ if (!function_exists('gh_user_branches_all')) {
 }
 // ------------------- Size function (All) -------------------
 if (!function_exists('gh_user_size_all')) {
-    function gh_user_size_all(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_size_all(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "size_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -280,8 +294,8 @@ if (!function_exists('gh_user_size_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -303,7 +317,7 @@ if (!function_exists('gh_user_size_all')) {
 }
 // ------------------- Forks function (All) -------------------
 if (!function_exists('gh_user_forks_all')) {
-    function gh_user_forks_all(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_forks_all(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "forks_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -315,8 +329,8 @@ if (!function_exists('gh_user_forks_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -338,7 +352,7 @@ if (!function_exists('gh_user_forks_all')) {
 }
 // ------------------- Issues function (All) -------------------
 if (!function_exists('gh_user_issues_all')) {
-    function gh_user_issues_all(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_issues_all(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "issues_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -350,8 +364,8 @@ if (!function_exists('gh_user_issues_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -373,7 +387,7 @@ if (!function_exists('gh_user_issues_all')) {
 }
 // ------------------- Watchers fuction (All) -------------------
 if (!function_exists('gh_user_watchers_all')) {
-    function gh_user_watchers_all(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_watchers_all(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "watchers_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -385,8 +399,8 @@ if (!function_exists('gh_user_watchers_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -410,7 +424,7 @@ if (!function_exists('gh_user_watchers_all')) {
 }
 // ------------------- Repositories Counter Function -------------------
 if (!function_exists('gh_user_repos_count')) {
-    function gh_user_repos_count(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_repos_count(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "repos_count_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -422,8 +436,8 @@ if (!function_exists('gh_user_repos_count')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -443,7 +457,7 @@ if (!function_exists('gh_user_repos_count')) {
 }
 // ------------------- Top Languages function (All) -------------------
 if (!function_exists('gh_user_top_languages_all')) {
-    function gh_user_top_languages_all(string $user, int $ttl = 3600, ?string $token = null, int $limit = 1): array
+    function gh_user_top_languages_all(string $user, int $ttl = 3600, ?string $ghtoken = null, int $limit = 1): array
     {
         $cacheKey = "top_languages_all_{$user}_limit{$limit}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -455,8 +469,8 @@ if (!function_exists('gh_user_top_languages_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -470,7 +484,7 @@ if (!function_exists('gh_user_top_languages_all')) {
             foreach ($repos as $repo) {
                 $repoOwner = $repo['owner']['login'];
                 $repoName = $repo['name'];
-                $repoLanguages = gh_top_language_count($repoOwner, $repoName, $ttl, $token, 10);
+                $repoLanguages = gh_top_language_count($repoOwner, $repoName, $ttl, $ghtoken, 10);
                 foreach ($repoLanguages as [$lang, $bytes]) {
                     if ($lang === '-') continue;
                     $languageCounts[$lang] = ($languageCounts[$lang] ?? 0) + (int)str_replace('%', '', $bytes);
@@ -496,7 +510,7 @@ if (!function_exists('gh_user_top_languages_all')) {
 }
 // ------------------- Pull Requests Function -------------------
 if (!function_exists('gh_repo_pull_requests')) {
-    function gh_repo_pull_requests(string $owner, string $repo, int $ttl = 300, ?string $token = null): int
+    function gh_repo_pull_requests(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null): int
     {
         $cacheKey = "prs_{$owner}_{$repo}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -505,8 +519,8 @@ if (!function_exists('gh_repo_pull_requests')) {
         }
         $url = "https://api.github.com/repos/{$owner}/{$repo}/pulls?state=all";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
@@ -521,7 +535,7 @@ if (!function_exists('gh_repo_pull_requests')) {
 }
 // ------------------- Merged Pull Requests Function -------------------
 if (!function_exists('gh_repo_merged_pull_requests')) {
-    function gh_repo_merged_pull_requests(string $owner, string $repo, int $ttl = 300, ?string $token = null): int
+    function gh_repo_merged_pull_requests(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null): int
     {
         $cacheKey = "prs_merged_{$owner}_{$repo}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -533,8 +547,8 @@ if (!function_exists('gh_repo_merged_pull_requests')) {
         do {
             $url = "https://api.github.com/repos/{$owner}/{$repo}/pulls?state=closed&per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -558,7 +572,7 @@ if (!function_exists('gh_repo_merged_pull_requests')) {
 }
 // ------------------- Merged Pull Requests Function (All) -------------------
 if (!function_exists('gh_user_merged_pull_requests_all')) {
-    function gh_user_merged_pull_requests_all(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_merged_pull_requests_all(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "prs_merged_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -570,8 +584,8 @@ if (!function_exists('gh_user_merged_pull_requests_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -583,7 +597,7 @@ if (!function_exists('gh_user_merged_pull_requests_all')) {
                 break;
             }
             foreach ($repos as $r) {
-                $sum += gh_repo_merged_pull_requests($r['owner']['login'], $r['name'], $ttl, $token);
+                $sum += gh_repo_merged_pull_requests($r['owner']['login'], $r['name'], $ttl, $ghtoken);
             }
             $page++;
         } while (count($repos) === 100);
@@ -593,7 +607,7 @@ if (!function_exists('gh_user_merged_pull_requests_all')) {
 }
 // ------------------- Subscribers Function (All) -------------------
 if (!function_exists('gh_user_subscribers_all')) {
-    function gh_user_subscribers_all(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_subscribers_all(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "subscribers_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -605,8 +619,8 @@ if (!function_exists('gh_user_subscribers_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -634,15 +648,15 @@ if (!function_exists('gh_user_subscribers_all')) {
 }
 // ------------------- Success Rate Function -------------------
 if (!function_exists('gh_repo_success_rate')) {
-    function gh_repo_success_rate(string $owner, string $repo, int $ttl = 300, ?string $token = null): string
+    function gh_repo_success_rate(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null): string
     {
         $cacheKey = "success_rate_{$owner}_{$repo}";
         $cached = gh_cache_get($cacheKey, $ttl);
         if ($cached !== null) {
             return $cached;
         }
-        $merged_prs = gh_repo_merged_pull_requests($owner, $repo, $ttl, $token);
-        $total_prs = gh_repo_pull_requests($owner, $repo, $ttl, $token);
+        $merged_prs = gh_repo_merged_pull_requests($owner, $repo, $ttl, $ghtoken);
+        $total_prs = gh_repo_pull_requests($owner, $repo, $ttl, $ghtoken);
 
         if ($total_prs === 0) {
             $rate = 'N/A';
@@ -655,15 +669,15 @@ if (!function_exists('gh_repo_success_rate')) {
 }
 // ------------------- Success Rate Function (All) -------------------
 if (!function_exists('gh_user_success_rate_all')) {
-    function gh_user_success_rate_all(string $user, int $ttl = 3600, ?string $token = null): string
+    function gh_user_success_rate_all(string $user, int $ttl = 3600, ?string $ghtoken = null): string
     {
         $cacheKey = "success_rate_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
         if ($cached !== null) {
             return $cached;
         }
-        $merged_prs_all = gh_user_merged_pull_requests_all($user, $ttl, $token);
-        $total_prs_all = gh_user_pull_requests_all($user, $ttl, $token);
+        $merged_prs_all = gh_user_merged_pull_requests_all($user, $ttl, $ghtoken);
+        $total_prs_all = gh_user_pull_requests_all($user, $ttl, $ghtoken);
 
         if ($total_prs_all === 0) {
             $rate = 'N/A';
@@ -676,20 +690,20 @@ if (!function_exists('gh_user_success_rate_all')) {
 }
 // ------------------- Files Function -------------------
 if (!function_exists('gh_repo_files')) {
-    function gh_repo_files(string $owner, string $repo, int $ttl = 300, ?string $token = null): int
+    function gh_repo_files(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null): int
     {
         $cacheKey = "files_{$owner}_{$repo}";
         $cached = gh_cache_get($cacheKey, $ttl);
         if ($cached !== null) {
             return (int)$cached;
         }
-        $repoInfo = gh_repo_info($owner, $repo, $ttl, $token);
+        $repoInfo = gh_repo_info($owner, $repo, $ttl, $ghtoken);
         $default_branch = $repoInfo['default_branch'] ?? 'main';
 
         $url = "https://api.github.com/repos/{$owner}/{$repo}/git/trees/{$default_branch}?recursive=1";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
@@ -707,7 +721,7 @@ if (!function_exists('gh_repo_files')) {
 }
 // ------------------- Files Function (All) -------------------
 if (!function_exists('gh_user_files_all')) {
-    function gh_user_files_all(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_files_all(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "files_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -719,8 +733,8 @@ if (!function_exists('gh_user_files_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -732,7 +746,7 @@ if (!function_exists('gh_user_files_all')) {
                 break;
             }
             foreach ($repos as $r) {
-                $sum += gh_repo_files($r['owner']['login'], $r['name'], $ttl, $token);
+                $sum += gh_repo_files($r['owner']['login'], $r['name'], $ttl, $ghtoken);
             }
             $page++;
         } while (count($repos) === 100);
@@ -742,7 +756,7 @@ if (!function_exists('gh_user_files_all')) {
 }
 // ------------------- Tags Function -------------------
 if (!function_exists('gh_repo_tags')) {
-    function gh_repo_tags(string $owner, string $repo, int $ttl = 300, ?string $token = null): int
+    function gh_repo_tags(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null): int
     {
         $cacheKey = "tags_{$owner}_{$repo}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -751,8 +765,8 @@ if (!function_exists('gh_repo_tags')) {
         }
         $url = "https://api.github.com/repos/{$owner}/{$repo}/tags?per_page=100";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
@@ -767,7 +781,7 @@ if (!function_exists('gh_repo_tags')) {
 }
 // ------------------- Tags Function (All) -------------------
 if (!function_exists('gh_user_tags_all')) {
-    function gh_user_tags_all(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_tags_all(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "tags_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -779,8 +793,8 @@ if (!function_exists('gh_user_tags_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -792,7 +806,7 @@ if (!function_exists('gh_user_tags_all')) {
                 break;
             }
             foreach ($repos as $r) {
-                $sum += gh_repo_tags($r['owner']['login'], $r['name'], $ttl, $token);
+                $sum += gh_repo_tags($r['owner']['login'], $r['name'], $ttl, $ghtoken);
             }
             $page++;
         } while (count($repos) === 100);
@@ -800,114 +814,65 @@ if (!function_exists('gh_user_tags_all')) {
         return $sum;
     }
 }
-// ------------------- Follower Function -------------------
+// ------------------- Follower Count Function -------------------
 if (!function_exists('gh_user_followers')) {
-    function gh_user_followers(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_followers(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "followers_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
         if ($cached !== null) {
             return (int)$cached;
         }
+
         $url = "https://api.github.com/users/{$user}";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
+
         $json = @file_get_contents($url, false, $context);
         if (!$json) {
             return 0;
         }
+
         $userInfo = json_decode($json, true);
         $count = $userInfo['followers'] ?? 0;
         gh_cache_set($cacheKey, $count);
         return $count;
     }
 }
-// ------------------- Following Function -------------------
+// ------------------- Following Count Function -------------------
 if (!function_exists('gh_user_following')) {
-    function gh_user_following(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_following(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "following_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
         if ($cached !== null) {
             return (int)$cached;
         }
+
         $url = "https://api.github.com/users/{$user}";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
+
         $json = @file_get_contents($url, false, $context);
         if (!$json) {
             return 0;
         }
+
         $userInfo = json_decode($json, true);
         $count = $userInfo['following'] ?? 0;
         gh_cache_set($cacheKey, $count);
         return $count;
     }
 }
-// ------------------- Follower/Following Namen Function -------------------
-if (!function_exists('gh_user_follower_name')) {
-    function gh_user_follower_name(string $user, int $ttl = 3600, ?string $token = null): string
-    {
-        $cacheKey = "last_follower_{$user}";
-        $cached = gh_cache_get($cacheKey, $ttl);
-        if ($cached !== null) {
-            return $cached;
-        }
-        $url = "https://api.github.com/users/{$user}/followers?per_page=1";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
-        }
-        $context = stream_context_create($opts);
-        $json = @file_get_contents($url, false, $context);
-        if (!$json) {
-            return 'N/A';
-        }
-        $followers = json_decode($json, true);
-        if (!is_array($followers) || empty($followers)) {
-            return 'N/A';
-        }
-        $name = $followers[0]['login'] ?? 'N/A';
-        gh_cache_set($cacheKey, $name);
-        return $name;
-    }
-}
-if (!function_exists('gh_user_following_name')) {
-    function gh_user_following_name(string $user, int $ttl = 3600, ?string $token = null): string
-    {
-        $cacheKey = "last_following_{$user}";
-        $cached = gh_cache_get($cacheKey, $ttl);
-        if ($cached !== null) {
-            return $cached;
-        }
-        $url = "https://api.github.com/users/{$user}/following?per_page=1";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
-        }
-        $context = stream_context_create($opts);
-        $json = @file_get_contents($url, false, $context);
-        if (!$json) {
-            return 'N/A';
-        }
-        $following = json_decode($json, true);
-        if (!is_array($following) || empty($following)) {
-            return 'N/A';
-        }
-        $name = $following[0]['login'] ?? 'N/A';
-        gh_cache_set($cacheKey, $name);
-        return $name;
-    }
-}
 // ------------------- Projects Function -------------------
 if (!function_exists('gh_repo_projects')) {
-    function gh_repo_projects(string $owner, string $repo, int $ttl = 300, ?string $token = null): int
+    function gh_repo_projects(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null): int
     {
         $cacheKey = "projects_{$owner}_{$repo}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -916,8 +881,8 @@ if (!function_exists('gh_repo_projects')) {
         }
         $url = "https://api.github.com/repos/{$owner}/{$repo}/projects?per_page=100";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n", "Accept" => "application/vnd.github.v3+json"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
@@ -932,7 +897,7 @@ if (!function_exists('gh_repo_projects')) {
 }
 // ------------------- Projekte Function (All) -------------------
 if (!function_exists('gh_user_projects_all')) {
-    function gh_user_projects_all(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_projects_all(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "projects_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -944,8 +909,8 @@ if (!function_exists('gh_user_projects_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -957,7 +922,7 @@ if (!function_exists('gh_user_projects_all')) {
                 break;
             }
             foreach ($repos as $r) {
-                $sum += gh_repo_projects($r['owner']['login'], $r['name'], $ttl, $token);
+                $sum += gh_repo_projects($r['owner']['login'], $r['name'], $ttl, $ghtoken);
             }
             $page++;
         } while (count($repos) === 100);
@@ -967,7 +932,7 @@ if (!function_exists('gh_user_projects_all')) {
 }
 // ------------------- Releases Function -------------------
 if (!function_exists('gh_repo_releases')) {
-    function gh_repo_releases(string $owner, string $repo, int $ttl = 300, ?string $token = null): int
+    function gh_repo_releases(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null): int
     {
         $cacheKey = "releases_{$owner}_{$repo}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -976,8 +941,8 @@ if (!function_exists('gh_repo_releases')) {
         }
         $url = "https://api.github.com/repos/{$owner}/{$repo}/releases?per_page=100";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
@@ -992,7 +957,7 @@ if (!function_exists('gh_repo_releases')) {
 }
 // ------------------- Releases Function (All) -------------------
 if (!function_exists('gh_user_releases_all')) {
-    function gh_user_releases_all(string $user, int $ttl = 3600, ?string $token = null): int
+    function gh_user_releases_all(string $user, int $ttl = 3600, ?string $ghtoken = null): int
     {
         $cacheKey = "releases_all_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -1004,8 +969,8 @@ if (!function_exists('gh_user_releases_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -1017,7 +982,7 @@ if (!function_exists('gh_user_releases_all')) {
                 break;
             }
             foreach ($repos as $r) {
-                $sum += gh_repo_releases($r['owner']['login'], $r['name'], $ttl, $token);
+                $sum += gh_repo_releases($r['owner']['login'], $r['name'], $ttl, $ghtoken);
             }
             $page++;
         } while (count($repos) === 100);
@@ -1027,7 +992,7 @@ if (!function_exists('gh_user_releases_all')) {
 }
 // ------------------- Gists Info Function (Core) -------------------
 if (!function_exists('gh_user_gists_info')) {
-    function gh_user_gists_info(string $user, int $ttl = 3600, ?string $token = null): array
+    function gh_user_gists_info(string $user, int $ttl = 3600, ?string $ghtoken = null): array
     {
         $cacheKey = "gists_info_{$user}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -1042,8 +1007,8 @@ if (!function_exists('gh_user_gists_info')) {
         do {
             $url = "https://api.github.com/users/{$user}/gists?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -1094,7 +1059,7 @@ if (!function_exists('gh_user_gists_info')) {
 }
 // ------------------- Gist Forks Counter Function (Robust) -------------------
 if (!function_exists('gh_gist_forks_count')) {
-    function gh_gist_forks_count(string $gistId, int $ttl = 300, ?string $token = null): int
+    function gh_gist_forks_count(string $gistId, int $ttl = 300, ?string $ghtoken = null): int
     {
         $cacheKey = "gist_forks_{$gistId}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -1103,8 +1068,8 @@ if (!function_exists('gh_gist_forks_count')) {
         }
         $url = "https://api.github.com/gists/{$gistId}/forks";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
@@ -1119,7 +1084,7 @@ if (!function_exists('gh_gist_forks_count')) {
 }
 // ------------------- Lines Statistics Function -------------------
 if (!function_exists('gh_repo_lines')) {
-    function gh_repo_lines(string $owner, string $repo, int $ttl = 300, ?string $token = null): array
+    function gh_repo_lines(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null): array
     {
         $cacheKey = "lines_stat_{$owner}_{$repo}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -1132,8 +1097,8 @@ if (!function_exists('gh_repo_lines')) {
         do {
             $url = "https://api.github.com/repos/{$owner}/{$repo}/commits?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -1166,7 +1131,7 @@ if (!function_exists('gh_repo_lines')) {
 }
 // ------------------- Milestones Function -------------------
 if (!function_exists('gh_repo_milestones')) {
-    function gh_repo_milestones(string $owner, string $repo, int $ttl = 300, ?string $token = null): array
+    function gh_repo_milestones(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null): array
     {
         $cacheKey = "milestones_{$owner}_{$repo}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -1178,8 +1143,8 @@ if (!function_exists('gh_repo_milestones')) {
         $url_open = "https://api.github.com/repos/{$owner}/{$repo}/milestones?state=open&per_page=100";
         $url_closed = "https://api.github.com/repos/{$owner}/{$repo}/milestones?state=closed&per_page=100";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
         $json_open = @file_get_contents($url_open, false, $context);
@@ -1203,7 +1168,7 @@ if (!function_exists('gh_repo_milestones')) {
 }
 // ------------------- Milestones Function (Single Repo) -------------------
 if (!function_exists('gh_repo_milestones_robust')) {
-    function gh_repo_milestones_robust(string $owner, string $repo, int $ttl = 300, ?string $token = null, string $state = 'all'): int
+    function gh_repo_milestones_robust(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null, string $state = 'all'): int
     {
         $cacheKey = "milestones_{$owner}_{$repo}_{$state}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -1212,8 +1177,8 @@ if (!function_exists('gh_repo_milestones_robust')) {
         }
         $url = "https://api.github.com/repos/{$owner}/{$repo}/milestones?state={$state}&per_page=100";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
         $count = 0;
@@ -1228,7 +1193,7 @@ if (!function_exists('gh_repo_milestones_robust')) {
 }
 // ------------------- Milestones Function (All Repos) -------------------
 if (!function_exists('gh_user_milestones_all')) {
-    function gh_user_milestones_all(string $user, int $ttl = 3600, ?string $token = null, string $state = 'all'): int
+    function gh_user_milestones_all(string $user, int $ttl = 3600, ?string $ghtoken = null, string $state = 'all'): int
     {
         $cacheKey = "milestones_all_{$user}_{$state}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -1240,8 +1205,8 @@ if (!function_exists('gh_user_milestones_all')) {
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
             $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-            if ($token) {
-                $opts['http']['header'] .= "Authorization: token $token\r\n";
+            if ($ghtoken) {
+                $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -1253,7 +1218,7 @@ if (!function_exists('gh_user_milestones_all')) {
                 break;
             }
             foreach ($repos as $r) {
-                $sum += gh_repo_milestones_robust($r['owner']['login'], $r['name'], $ttl, $token, $state);
+                $sum += gh_repo_milestones_robust($r['owner']['login'], $r['name'], $ttl, $ghtoken, $state);
             }
             $page++;
         } while (count($repos) === 100);
@@ -1263,7 +1228,7 @@ if (!function_exists('gh_user_milestones_all')) {
 }
 // ------------------- Version comparison function -------------------
 if (!function_exists('gh_repo_compare_version')) {
-    function gh_repo_compare_version(string $owner, string $repo, string $current_version, int $ttl = 300, ?string $token = null): array
+    function gh_repo_compare_version(string $owner, string $repo, string $current_version, int $ttl = 300, ?string $ghtoken = null): array
     {
         $cacheKey = "version_check_{$owner}_{$repo}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -1272,8 +1237,8 @@ if (!function_exists('gh_repo_compare_version')) {
         }
         $url = "https://api.github.com/repos/{$owner}/{$repo}/releases/latest";
         $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
@@ -1302,11 +1267,11 @@ if (!function_exists('gh_repo_compare_version')) {
 // ------------------- Neuer Ansatz der Pushes und Commits ----------------------
 
 if (!function_exists('gh_push_info')) {
-    function gh_push_info(string $owner, ?string $repo = null, int $ttl = 300, ?string $token = null): array
+    function gh_push_info(string $owner, ?string $repo = null, int $ttl = 300, ?string $ghtoken = null): array
     {
         $cacheKey = "push_info_" . ($repo ? "repo_{$owner}_{$repo}" : "user_{$owner}");
         $cached = gh_cache_get($cacheKey, $ttl);
-        
+
         $info = [
             'latest' => [
                 'date' => 'N/A',
@@ -1317,8 +1282,8 @@ if (!function_exists('gh_push_info')) {
         ];
 
         $opts = ["http" => ["header" => "User-Agent: MiniBadges\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
 
@@ -1327,18 +1292,18 @@ if (!function_exists('gh_push_info')) {
             $repoJson = @file_get_contents($repoUrl, false, $context);
             $repoData = $repoJson ? json_decode($repoJson, true) : null;
             $latestPushTimestamp = isset($repoData['pushed_at']) ? strtotime($repoData['pushed_at']) : 0;
-            
+
             $cachedPushTimestamp = ($cached !== null && isset($cached['latest']['datetime'])) ? strtotime($cached['latest']['datetime']) : 0;
-            
+
             if ($latestPushTimestamp > $cachedPushTimestamp || $cached === null) {
                 // Finde den neuesten Commit über alle Branches hinweg
                 $branchesUrl = "https://api.github.com/repos/{$owner}/{$repo}/branches";
                 $branchesJson = @file_get_contents($branchesUrl, false, $context);
                 $branches = $branchesJson ? json_decode($branchesJson, true) : [];
-                
+
                 $latestCommit = null;
                 $latestCommitTime = 0;
-                
+
                 foreach ($branches as $branch) {
                     $commitUrl = "https://api.github.com/repos/{$owner}/{$repo}/commits/{$branch['name']}";
                     $commitJson = @file_get_contents($commitUrl, false, $context);
@@ -1351,11 +1316,11 @@ if (!function_exists('gh_push_info')) {
                         }
                     }
                 }
-                
+
                 if ($latestCommit) {
                     $info['latest']['date'] = date('Y-m-d', $latestCommitTime);
                     $info['latest']['datetime'] = date('Y-m-d H:i:s', $latestCommitTime);
-                    
+
                     $commitUrl = $latestCommit['url'];
                     $commitJson = @file_get_contents($commitUrl, false, $context);
                     if ($commitJson) {
@@ -1372,7 +1337,7 @@ if (!function_exists('gh_push_info')) {
             }
         } else {
             // ... (Logik für alle Benutzer-Repos, unverändert) ...
-            $repos = gh_user_public_repos($owner, $ttl, $token);
+            $repos = gh_user_public_repos($owner, $ttl, $ghtoken);
             $latestPush = null;
             $latestPushTime = 0;
             foreach ($repos as $repoItem) {
@@ -1394,11 +1359,11 @@ if (!function_exists('gh_push_info')) {
     }
 }
 if (!function_exists('gh_commit_info')) {
-    function gh_commit_info(string $owner, ?string $repo = null, int $ttl = 300, ?string $token = null): array
+    function gh_commit_info(string $owner, ?string $repo = null, int $ttl = 300, ?string $ghtoken = null): array
     {
         $cacheKey = "commit_info_" . ($repo ? "repo_{$owner}_{$repo}" : "user_{$owner}");
         $cached = gh_cache_get($cacheKey, $ttl);
-        
+
         $info = [
             'latest' => [
                 'date' => 'N/A',
@@ -1409,8 +1374,8 @@ if (!function_exists('gh_commit_info')) {
         ];
 
         $opts = ["http" => ["header" => "User-Agent: MiniBadges\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
 
@@ -1419,10 +1384,10 @@ if (!function_exists('gh_commit_info')) {
             $branchesUrl = "https://api.github.com/repos/{$owner}/{$repo}/branches";
             $branchesJson = @file_get_contents($branchesUrl, false, $context);
             $branches = $branchesJson ? json_decode($branchesJson, true) : [];
-            
+
             $latestCommit = null;
             $latestCommitTime = 0;
-            
+
             foreach ($branches as $branch) {
                 $commitUrl = "https://api.github.com/repos/{$owner}/{$repo}/commits/{$branch['name']}";
                 $commitJson = @file_get_contents($commitUrl, false, $context);
@@ -1435,14 +1400,14 @@ if (!function_exists('gh_commit_info')) {
                     }
                 }
             }
-            
+
             $cachedCommitTimestamp = ($cached !== null && isset($cached['latest']['datetime'])) ? strtotime($cached['latest']['datetime']) : 0;
 
             if ($latestCommitTime > $cachedCommitTimestamp || $cached === null) {
                 if ($latestCommit) {
                     $info['latest']['date'] = date('Y-m-d', $latestCommitTime);
                     $info['latest']['datetime'] = date('Y-m-d H:i:s', $latestCommitTime);
-                    
+
                     $commitUrl = $latestCommit['url'];
                     $commitJson = @file_get_contents($commitUrl, false, $context);
                     if ($commitJson) {
@@ -1458,7 +1423,7 @@ if (!function_exists('gh_commit_info')) {
             }
         } else {
             // ... (Logik für alle Benutzer-Repos, unverändert) ...
-            $repos = gh_user_public_repos($owner, $ttl, $token);
+            $repos = gh_user_public_repos($owner, $ttl, $ghtoken);
             $latestCommit = null;
             $latestCommitTime = 0;
             foreach ($repos as $repoItem) {
@@ -1492,7 +1457,7 @@ if (!function_exists('gh_commit_info')) {
     }
 }
 if (!function_exists('gh_all_commit_info')) {
-    function gh_all_commit_info(string $owner, int $ttl = 300, ?string $token = null): array
+    function gh_all_commit_info(string $owner, int $ttl = 300, ?string $ghtoken = null): array
     {
         $cacheKey = "all_commit_info_{$owner}";
         $cached = gh_cache_get($cacheKey, $ttl);
@@ -1507,12 +1472,12 @@ if (!function_exists('gh_all_commit_info')) {
             'lines_deleted' => 0,
         ];
 
-        $repos = gh_user_public_repos($owner, $ttl, $token);
+        $repos = gh_user_public_repos($owner, $ttl, $ghtoken);
         $latestCommit = null;
         $latestCommitTime = 0;
         $opts = ["http" => ["header" => "User-Agent: MiniBadges\r\n"]];
-        if ($token) {
-            $opts['http']['header'] .= "Authorization: token $token\r\n";
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
         $context = stream_context_create($opts);
 
@@ -1548,3 +1513,472 @@ if (!function_exists('gh_all_commit_info')) {
         return $info;
     }
 }
+// ------------------- Open Issues Funktion -------------------
+if (!function_exists('gh_repo_issues_open')) {
+    function gh_repo_issues_open(string $owner, string $repo, int $ttl = 3600, ?string $ghtoken = null): int
+    {
+        $cacheKey = "new_robust_issues_open_{$owner}_{$repo}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) {
+            return (int)$cached;
+        }
+
+        $url = "https://api.github.com/repos/{$owner}/{$repo}";
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
+        }
+        $context = stream_context_create($opts);
+
+        $json = @file_get_contents($url, false, $context);
+        if (!$json) {
+            return 0;
+        }
+
+        $repoData = json_decode($json, true);
+        $count = $repoData['open_issues_count'] ?? 0;
+
+        gh_cache_set($cacheKey, $count);
+        return $count;
+    }
+}
+// ------------------- Closed Issues Funktion -------------------
+if (!function_exists('gh_repo_issues_closed')) {
+    function gh_repo_issues_closed(string $owner, string $repo, int $ttl = 3600, ?string $ghtoken = null): int
+    {
+        $cacheKey = "new_robust_issues_closed_{$owner}_{$repo}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) {
+            return (int)$cached;
+        }
+
+        // Retrieve all closed items, including pull requests
+        $url = "https://api.github.com/repos/{$owner}/{$repo}/issues?state=closed&per_page=100";
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        if ($ghtoken) {
+            $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
+        }
+        $context = stream_context_create($opts);
+
+        $json = @file_get_contents($url, false, $context);
+        if (!$json) {
+            return 0;
+        }
+
+        $items = json_decode($json, true);
+        if (!is_array($items)) {
+            return 0;
+        }
+
+        $closedIssueCount = 0;
+        foreach ($items as $item) {
+            // Only count issues that are not pull requests
+            if (!isset($item['pull_request'])) {
+                $closedIssueCount++;
+            }
+        }
+
+        gh_cache_set($cacheKey, $closedIssueCount);
+        return $closedIssueCount;
+    }
+}
+// ---------------- Sponsor Count -----------------------
+if (!function_exists('gh_user_sponsors_count')) {
+    function gh_user_sponsors_count(string $username, int $ttl = 3600, ?string $ghtoken = null): int
+    {
+        $cacheKey = "gh_sponsors_count_{$username}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) {
+            return (int)$cached;
+        }
+
+        if (!$ghtoken) {
+            return 0; // Token erforderlich
+        }
+
+        $query = <<<GQL
+query {
+  user(login: "{$username}") {
+    sponsorshipsAsMaintainer {
+      totalCount
+    }
+  }
+}
+GQL;
+
+        $ch = curl_init('https://api.github.com/graphql');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: bearer ' . $ghtoken,
+            'User-Agent: MiniBadges/1.0'
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['query' => $query]));
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        $data = json_decode($response, true);
+        $count = $data['data']['user']['sponsorshipsAsMaintainer']['totalCount'] ?? 0;
+
+        gh_cache_set($cacheKey, $count);
+        return (int)$count;
+    }
+}
+// ----------------- Discussions ----------------------
+if (!function_exists('gh_repo_discussions')) {
+    /**
+     * Liefert wichtige Informationen zu Discussions eines Repositories
+     * @param string $owner GitHub Owner
+     * @param string $repo GitHub Repository
+     * @param int $ttl Cache-Zeit in Sekunden
+     * @param string|null $ghtoken GitHub Token
+     * @return array
+     * [
+     *   'count' => int,
+     *   'last' => [
+     *       'title' => string,
+     *       'author' => string,
+     *       'createdAt' => string,
+     *       'updatedAt' => string,
+     *       'commentsCount' => int
+     *   ]
+     * ]
+     */
+    function gh_repo_discussions(string $owner, string $repo, int $ttl = 3600, ?string $ghtoken = null): array
+    {
+        $cacheKey = "gh_discussions_{$owner}_{$repo}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        if (!$ghtoken) {
+            return ['count' => 0, 'last' => null];
+        }
+
+        $query = <<<GQL
+query {
+  repository(owner: "{$owner}", name: "{$repo}") {
+    discussions(first: 1, orderBy: {field: CREATED_AT, direction: DESC}) {
+      totalCount
+      nodes {
+        title
+        createdAt
+        updatedAt
+        author {
+          login
+        }
+        comments(first: 0) {
+          totalCount
+        }
+      }
+    }
+  }
+}
+GQL;
+
+        $ch = curl_init('https://api.github.com/graphql');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: bearer ' . $ghtoken,
+            'User-Agent: MiniBadges/1.0'
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['query' => $query]));
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        $data = json_decode($response, true);
+        $discussionData = $data['data']['repository']['discussions'] ?? null;
+
+        $lastDiscussion = null;
+        if (isset($discussionData['nodes'][0])) {
+            $node = $discussionData['nodes'][0];
+
+            // kleine Hilfsfunktion für Datumsformatierung
+            $formatDate = function ($dateStr) {
+                if (!$dateStr) return '';
+                $dt = new DateTime($dateStr);
+                return $dt->format('Y-m-d H:i:s');
+            };
+
+            $lastDiscussion = [
+                'title'        => $node['title'] ?? '',
+                'author'       => $node['author']['login'] ?? '',
+                'createdAt'    => isset($node['createdAt']) ? $formatDate($node['createdAt']) : '',
+                'updatedAt'    => isset($node['updatedAt']) ? $formatDate($node['updatedAt']) : '',
+                'commentsCount' => $node['comments']['totalCount'] ?? 0
+            ];
+        }
+
+
+        $result = [
+            'count' => $discussionData['totalCount'] ?? 0,
+            'last' => $lastDiscussion
+        ];
+
+        gh_cache_set($cacheKey, $result);
+        return $result;
+    }
+}
+if (!function_exists('gh_user_commits_complete')) {
+    function gh_user_commits_complete(string $owner, int $ttl = 3600, ?string $ghtoken = null): array
+    {
+        $cacheKey = "gh_commits_complete_{$owner}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) return $cached;
+
+        if (!$ghtoken) return ['total' => 0, 'last' => null, 'repos' => []];
+
+        $totalCommits = 0;
+        $lastCommit = null;
+        $reposCommits = [];
+
+        $page = 1;
+        do {
+            $reposUrl = "https://api.github.com/users/{$owner}/repos?per_page=100&type=public&page={$page}";
+            $opts = [
+                "http" => [
+                    "header" => "User-Agent: MiniBadges/1.0\r\nAuthorization: token {$ghtoken}\r\n"
+                ]
+            ];
+            $context = stream_context_create($opts);
+            $reposJson = @file_get_contents($reposUrl, false, $context);
+            $repos = $reposJson ? json_decode($reposJson, true) : [];
+            if (!is_array($repos) || empty($repos)) break;
+
+            foreach ($repos as $repo) {
+                $repoName = $repo['name'];
+                $repoCommits = 0;
+                $repoLastCommit = null;
+
+                // Alle Branches des Repos
+                $branchesJson = @file_get_contents("https://api.github.com/repos/{$owner}/{$repoName}/branches?per_page=100", false, $context);
+                $branches = $branchesJson ? json_decode($branchesJson, true) : [];
+                foreach ($branches as $branch) {
+                    $branchName = $branch['name'];
+
+                    // Holen der Commits mit stats
+                    $commitsJson = @file_get_contents("https://api.github.com/repos/{$owner}/{$repoName}/commits?sha={$branchName}&per_page=100", false, $context);
+                    $commits = $commitsJson ? json_decode($commitsJson, true) : [];
+                    $repoCommits += count($commits);
+
+                    foreach ($commits as $commit) {
+                        $commitDateRaw = $commit['commit']['committer']['date'] ?? null;
+                        if (!$commitDateRaw) continue;
+                        $commitTime = strtotime($commitDateRaw);
+
+                        // Letzten Commit per Repo finden
+                        if (!$repoLastCommit || $commitTime > strtotime($repoLastCommit['date'])) {
+                            // Hole Commit stats
+                            $commitUrl = $commit['url'] ?? null;
+                            $linesAdded = 0;
+                            $linesDeleted = 0;
+                            if ($commitUrl) {
+                                $commitDetailsJson = @file_get_contents($commitUrl, false, $context);
+                                $commitDetails = $commitDetailsJson ? json_decode($commitDetailsJson, true) : [];
+                                $linesAdded = $commitDetails['stats']['additions'] ?? 0;
+                                $linesDeleted = $commitDetails['stats']['deletions'] ?? 0;
+                            }
+                            $repoLastCommit = [
+                                'date' => date('Y-m-d H:i:s', $commitTime),
+                                'lines_added' => $linesAdded,
+                                'lines_deleted' => $linesDeleted
+                            ];
+                        }
+
+                        // Letzten Commit global finden
+                        if (!$lastCommit || $commitTime > strtotime($lastCommit['date'])) {
+                            $lastCommit = [
+                                'date' => date('Y-m-d H:i:s', $commitTime),
+                                'lines_added' => $commitDetails['stats']['additions'] ?? 0,
+                                'lines_deleted' => $commitDetails['stats']['deletions'] ?? 0
+                            ];
+                        }
+                    }
+                }
+
+                $reposCommits[$repoName] = $repoCommits;
+                $totalCommits += $repoCommits;
+            }
+
+            $page++;
+        } while (count($repos) === 100);
+
+        $result = [
+            'total' => $totalCommits,
+            'last' => $lastCommit,
+            'repos' => $reposCommits
+        ];
+        gh_cache_set($cacheKey, $result);
+        return $result;
+    }
+}
+if (!function_exists('gh_repo_commits_complete')) {
+    function gh_repo_commits_complete(string $owner, string $repo, int $ttl = 3600, ?string $ghtoken = null, ?string $branchFilter = null): int
+    {
+        $cacheKey = "gh_repo_commits_complete_{$owner}_{$repo}_" . ($branchFilter ?: 'all');
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) return (int)$cached;
+
+        if (!$ghtoken) return 0;
+
+        $commitCount = 0;
+        $opts = [
+            "http" => [
+                "header" => "User-Agent: MiniBadges/1.0\r\nAuthorization: token {$ghtoken}\r\n"
+            ]
+        ];
+        $context = stream_context_create($opts);
+
+        // Branch-Liste holen
+        $branches = [];
+        if ($branchFilter) {
+            // Prüfen, ob der Branch existiert
+            $branchUrl = "https://api.github.com/repos/{$owner}/{$repo}/branches/{$branchFilter}";
+            $branchJson = @file_get_contents($branchUrl, false, $context);
+            if (!$branchJson) {
+                gh_cache_set($cacheKey, -1); // Fehler: Branch nicht gefunden
+                return -1;
+            }
+            $branches[] = ['name' => $branchFilter];
+        } else {
+            $branchesJson = @file_get_contents("https://api.github.com/repos/{$owner}/{$repo}/branches?per_page=100", false, $context);
+            $branches = $branchesJson ? json_decode($branchesJson, true) : [];
+        }
+
+        foreach ($branches as $branch) {
+            $branchName = $branch['name'];
+            $page = 1;
+            do {
+                $commitsUrl = "https://api.github.com/repos/{$owner}/{$repo}/commits?sha={$branchName}&per_page=100&page={$page}";
+                $commitsJson = @file_get_contents($commitsUrl, false, $context);
+                $commits = $commitsJson ? json_decode($commitsJson, true) : [];
+                $commitCount += count($commits);
+                $page++;
+            } while (!empty($commits) && count($commits) === 100);
+        }
+
+        gh_cache_set($cacheKey, $commitCount);
+        return $commitCount;
+    }
+}
+if (!function_exists('gh_repo_codesize')) {
+    function gh_repo_codesize(string $owner, string $repo, int $ttl = 3600, ?string $ghtoken = null): int
+    {
+        $cacheKey = "gh_repo_codesize_{$owner}_{$repo}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) return (int)$cached;
+
+        if (!$ghtoken) return 0;
+
+        $opts = [
+            "http" => [
+                "header" => "User-Agent: MiniBadges/1.0\r\nAuthorization: token {$ghtoken}\r\n"
+            ]
+        ];
+        $context = stream_context_create($opts);
+
+        // GitHub gibt Sprachen mit Codezeilen in Bytes zurück
+        $url = "https://api.github.com/repos/{$owner}/{$repo}/languages";
+        $json = @file_get_contents($url, false, $context);
+        $langs = $json ? json_decode($json, true) : [];
+
+        $total = 0;
+        foreach ($langs as $lang => $bytes) {
+            $total += (int)$bytes;
+        }
+
+        gh_cache_set($cacheKey, $total);
+        return $total;
+    }
+}
+if (!function_exists('gh_user_codesize_all')) {
+    function gh_user_codesize_all(string $owner, int $ttl = 3600, ?string $ghtoken = null): int
+    {
+        $cacheKey = "gh_user_codesize_all_{$owner}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) return (int)$cached;
+
+        if (!$ghtoken) return 0;
+
+        $opts = [
+            "http" => [
+                "header" => "User-Agent: MiniBadges/1.0\r\nAuthorization: token {$ghtoken}\r\n"
+            ]
+        ];
+        $context = stream_context_create($opts);
+
+        $page = 1;
+        $total = 0;
+        do {
+            $reposJson = @file_get_contents("https://api.github.com/users/{$owner}/repos?per_page=100&page={$page}", false, $context);
+            $repos = $reposJson ? json_decode($reposJson, true) : [];
+            foreach ($repos as $repo) {
+                $langsJson = @file_get_contents("https://api.github.com/repos/{$owner}/{$repo['name']}/languages", false, $context);
+                $langs = $langsJson ? json_decode($langsJson, true) : [];
+                foreach ($langs as $bytes) {
+                    $total += (int)$bytes;
+                }
+            }
+            $page++;
+        } while (!empty($repos) && count($repos) === 100);
+
+        gh_cache_set($cacheKey, $total);
+        return $total;
+    }
+}
+// ----------------- Profil Infos --------------------
+if (!function_exists('gh_user_fullinfo')) {
+    function gh_user_fullinfo(string $username, int $ttl = 3600, ?string $ghtoken = null): array {
+        $cacheKey = "gh_user_fullinfo_{$username}";
+        $cached = gh_cache_get($cacheKey, $ttl);
+        if ($cached !== null) return $cached;
+
+        if (!$ghtoken) return [];
+
+        $opts = [
+            "http" => [
+                "header" => "User-Agent: MiniBadges/1.0\r\nAuthorization: bearer {$ghtoken}\r\n",
+                "method" => "POST",
+            ]
+        ];
+
+        $query = json_encode([
+            "query" => <<<GQL
+query {
+  user(login: "{$username}") {
+    login
+    name
+    company
+    location
+    createdAt
+    updatedAt
+    status {
+      emoji
+      message
+      updatedAt
+    }
+  }
+}
+GQL
+        ]);
+
+        $opts['http']['header'] .= "Content-Type: application/json\r\n";
+        $opts['http']['content'] = $query;
+        $context = stream_context_create($opts);
+
+        $url = "https://api.github.com/graphql";
+        $result = @file_get_contents($url, false, $context);
+        $data = $result ? json_decode($result, true) : [];
+
+        if (!isset($data['data']['user'])) {
+            return [];
+        }
+
+        $user = $data['data']['user'];
+        gh_cache_set($cacheKey, $user);
+        return $user;
+    }
+}
+
