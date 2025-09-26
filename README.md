@@ -3,7 +3,9 @@
 > This script is currently in **Beta**.  
 > If you like, you can try the `experimental` branch and test it out.  
 > Please keep in mind that bugs may still occur here and there.  
-> The [**Wiki**](https://github.com/RonDevHub/Mini-Badges/wiki) is still **under construction**.
+> The [**Wiki**](https://commitcloud.net/RonDevHub/Mini-Badges/wiki) is still **under construction**.
+
+> Support: [**Matrix Chat**](https://matrix.to/#/#mini-badges:matrix.s3cr.net)
 ---
 ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/created_at) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/stars) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/issues) ![GitHub Repo language](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/top_language) ![GitHub Repo license](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/license) ![GitHub Repo release](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/release) ![GitHub Repo release](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/forks) ![GitHub Repo downlods](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/downloads) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/watchers) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/commit-info) ![GitHub Repo downlods](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/branches)
 
