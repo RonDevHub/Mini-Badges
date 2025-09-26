@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.2.0] – 2025-09-16
+## [1.1.0-stable] – 2025-09-26
 ### Added
 - [2025-09-12] New styles added: `classic`, `social`, `minimalist` & `pill`
 - [2025-09-12] New metrics to display open and closed issues of a repo `issues-open`, `issues-closed`
