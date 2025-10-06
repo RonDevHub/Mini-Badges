@@ -1,0 +1,49 @@
+RewriteEngine On
+RewriteBase /
+
+# -------------------------------
+# Ignore existing files/directories
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# -------------------------------
+# STATIC BADGES
+# /static/<left>/<right>/<style?>
+RewriteRule ^static/([^/]+)/([^/]+)/?([^/]+)?$ \
+  badge.php?type=static&left=$1&right=$2&style=$3 [QSA,L]
+
+# -------------------------------
+# ICON BADGES
+# /icon/<iconpair>/<rightTriplet>/<style>/<leftTriplet>
+RewriteRule ^icon/([^/]+)/([^/]+)/([^/]+)/?([^/]+)?$ \
+  badge.php?type=icon&iconpair=$1&rightseg=$2&style=$3&leftseg=$4 [QSA,L]
+
+# -------------------------------
+# GITHUB BADGES (alias: github)
+# Structure: /github/<owner>/<repo>/<metric>/<style>/<iconpair>/<lang>/<messagepair>/<labelpair>
+# All parameters after "metric" are optional, therefore progressively reduced from lang → minimal.
+
+# 1. Full: owner/repo/metric/style/iconpair/lang/messagepair/labelpair
+RewriteRule ^github/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ \
+  badge.php?type=github&owner=$1&repo=$2&metric=$3&style=$4&iconpair=$5&lang=$6&messagepair=$7&labelpair=$8 [QSA,L]
+
+# 2. Up to messagepair
+RewriteRule ^github/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ \
+  badge.php?type=github&owner=$1&repo=$2&metric=$3&style=$4&iconpair=$5&lang=$6&messagepair=$7 [QSA,L]
+
+# 3. Up to lang
+RewriteRule ^github/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ \
+  badge.php?type=github&owner=$1&repo=$2&metric=$3&style=$4&iconpair=$5&lang=$6 [QSA,L]
+
+# 4. Up to iconpair
+RewriteRule ^github/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ \
+  badge.php?type=github&owner=$1&repo=$2&metric=$3&style=$4&iconpair=$5 [QSA,L]
+
+# 5. Up to style
+RewriteRule ^github/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ \
+  badge.php?type=github&owner=$1&repo=$2&metric=$3&style=$4 [QSA,L]
+
+# 6. Minimal
+RewriteRule ^github/([^/]+)/([^/]+)/([^/]+)$ \
+  badge.php?type=github&owner=$1&repo=$2&metric=$3 [QSA,L]
