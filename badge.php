@@ -643,3 +643,70 @@ if ($type === 'codeberg') {
     echo '</svg>';
     exit;
 }
+
+// ------------------- TYPE: FORGEJO -------------------
+if ($type === 'forgejo') {
+    require_once __DIR__ . '/helpers/forgejo.php';
+    
+    // ------------------- Load icon -------------------
+    $iconSvgNormalized = '';
+    $iconW = 0;
+    if ($iconRequested && is_file($path = __DIR__ . '/icons/' . basename($iconRequested) . '.svg')) {
+        $raw = file_get_contents($path);
+        $raw = str_replace('currentColor', $iconColorNormalized, $raw);
+        $raw = preg_replace('/<\?xml[^>]*\?>/i', '', $raw);
+        $raw = preg_replace('/<!DOCTYPE[^>]*>/i', '', $raw);
+        $viewBox = '0 0 24 24';
+        $inner = $raw;
+        if (preg_match('/<svg\b([^>]*)>(.*?)<\/svg>/is', $raw, $m)) {
+            $svgAttrs = $m[1];
+            $inner = $m[2];
+            if (preg_match('/viewBox="([^"]+)"/i', $svgAttrs, $vb)) {
+                $viewBox = $vb[1];
+            }
+        }
+        $iconW = 14;
+        $iconSvgNormalized = '<svg width="' . $iconW . '" height="' . $iconW . '" viewBox="' . esc($viewBox) . '" xmlns="http://www.w3.org/2000/svg">' . $inner . '</svg>';
+    }
+    // ------------------- Widths -------------------
+    $gapIconText = (int)($p['gap'] ?? 4);
+    if ($iconSvgNormalized !== '' && $text1 !== '') {
+        $leftInner = $iconW + $gapIconText + approxWidth($text1);
+    } elseif ($iconSvgNormalized !== '' && $text1 === '') {
+        $leftInner = $iconW;
+    } else {
+        $leftInner = approxWidth($text1);
+    }
+    $wLeft = $pad + $leftInner + $pad;
+    if ($iconSvgNormalized !== '' && $text1 === '') {
+        $wLeft = max($wLeft, $pad + $iconW + $pad);
+    }
+    $wRight = $pad + approxWidth($text2) + $pad;
+    $W = $wLeft + $wRight;
+    $yText = $h / 2;
+
+    // ------------------- Output -------------------
+    echo '<svg xmlns="http://www.w3.org/2000/svg" width="' . (int)$W . '" height="' . (int)$h . '">';
+    if ($defs) echo '<defs>' . $defs . '</defs>';
+    echo '<path d="' . path_left_rounded($wLeft, $h, $radius) . '" fill="' . esc($colorLabel) . '"/>';
+    if ($iconSvgNormalized !== '') {
+        $iconX = ($text1 !== '') ? $pad : intval(($wLeft - $iconW) / 2);
+        $iconY = intval(($h - $iconW) / 2);
+        $iconOut = preg_replace('/<svg\b/i', '<svg x="' . $iconX . '" y="' . $iconY . '"', $iconSvgNormalized, 1);
+        echo $iconOut;
+    }
+    if ($text1 !== '') {
+        $textStartX = $pad + ($iconSvgNormalized !== '' ? ($iconW + $gapIconText) : 0);
+        $leftTextInnerWidth = $wLeft - $textStartX - $pad;
+        $leftTextCenterX = $textStartX + ($leftTextInnerWidth / 2);
+        echo '<text x="' . $leftTextCenterX . '" y="' . $yText . '" fill="' . esc($textColorLabel) . '" font-family="' . esc($fontFamily) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text1) . '</text>';
+    }
+    echo '<g transform="translate(' . $wLeft . ',0)"><path d="' . path_right_rounded($wRight, $h, $radius) . '" fill="' . esc($colorMessage) . '"/></g>';
+    echo '<text x="' . ($wLeft + $wRight / 2) . '" y="' . $yText . '" fill="' . esc($textColorMessage) . '" font-family="' . esc($fontFamily) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text2) . '</text>';
+    if (!empty($p['gradient'])) {
+        echo '<rect x="0" y="0" width="' . $W . '" height="' . $h . '" fill="url(#shine)"/>';
+        echo '<rect x="0" y="0" width="' . $W . '" height="' . ($h / 2) . '" fill="url(#gloss)"/>';
+    }
+    echo '</svg>';
+    exit;
+}
