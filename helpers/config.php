@@ -5,18 +5,25 @@ return [
     'defaultMessageColor' => '#0B7DBE',
     'defaultTextColor'    => '#fff',
 
-    // Allowed owners for GitHub badges, Example: ['owner1', 'owner2'] or [] for all
-    'allowedOwners' => ['owner1'], // only these allowed
+    // Default language of dynamic badges (en,de,es,it,fr,uk)
+    'defaultLang' => 'en',
 
     // Typography
     'fontFamily' => 'Courier New, Consolas, monospace, Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, DejaVu Sans, Verdana, sans-serif',
 
     // Caching for API results (seconds)
     'cacheTime'           => 600,
-
+    
+    // Allowed owners for GitHub badges, Example: ['owner1', 'owner2'] or [] for all
+    'allowedOwners' => ['owner1'], // only these allowed
     // Optional: GitHub Token (Personal Access Token) for higher rate limits
     // Leave empty if not needed; for public data 60 req/h unauthenticated.
     'githubToken'         => '',
+
+    // Allowed owners for Codeberg badges, Example: ['owner1', 'owner2'] or [] for all
+    'allowedCodebergOwners' => ['owner1'], // only these allowed
+    // Codeberg Token (Personal Access Token)
+    'codebergToken' => '',
 
     // HTTP cache headers for SVG output
     'svgMaxAge'           => 300,

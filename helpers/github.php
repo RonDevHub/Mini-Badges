@@ -1,5 +1,24 @@
 <?php
 require_once __DIR__ . '/../badge.php';
+// Base parameters (can be overwritten by "pairs")
+    $owner  = q('owner', 'RonDevHub');
+    $repo   = q('repo', 'Mini-Badges');
+    $metric = q('metric', 'stars');
+    $ttl    = (int)$config['cacheTime'];
+    $ghtoken  = $config['githubToken'] ?: null;
+    $namedColors = $config['colors'];
+    // Route-pairs (from .htaccess)
+    $iconPair    = q('iconpair', null);
+    $langPair    = q('lang', null);
+    $messagePair = q('messagepair', null);
+    $labelPair   = q('labelpair', null);
+
+    if (!empty($config['allowedOwners']) && is_array($config['allowedOwners']) && !in_array($owner, $config['allowedOwners'], true)) {
+        http_response_code(400);
+        echo '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="20"><text x="10" y="15" fill="red">⛔️ Invalid owner</text></svg>';
+        exit;
+    }
+
 function gh_cache_path(string $key): string
 {
     return dirname(__DIR__) . '/cache/' . preg_replace('~[^a-zA-Z0-9_.-]~', '_', $key) . '.json';
@@ -13,7 +32,7 @@ function gh_cached_get(string $url, int $ttl, ?string $ghtoken = null): ?array
         if ($data !== false) return json_decode($data, true);
     }
     $headers = [
-        'User-Agent: MiniBadges/1.0',
+        'User-Agent: MiniBadges/1.2.0',
         'Accept: application/vnd.github+json'
     ];
     if ($ghtoken) $headers[] = 'Authorization: Bearer ' . $ghtoken;
@@ -73,17 +92,6 @@ function gh_top_language(string $owner, string $repo, int $ttl, ?string $ghtoken
     }
     return null;
 }
-// ------------------- Load language -------------------
-if ($langPair) {
-    $langFileLocal = __DIR__ . '/lang/' . basename($langPair) . '.php';
-    $L = is_file($langFileLocal) ? include $langFileLocal : (is_file(__DIR__ . '/lang/en.php') ? include __DIR__ . '/lang/en.php' : []);
-} else {
-    if (!isset($L) || !is_array($L)) {
-        $langTop = q('lang', $config['defaultLang'] ?? 'en');
-        $langFileTop = __DIR__ . '/lang/' . basename($langTop) . '.php';
-        $L = is_file($langFileTop) ? include $langFileTop : include __DIR__ . '/lang/en.php';
-    }
-}
 // ------------------- Auxiliary function short format -------------------
 function formatNumberShort($num)
 {
@@ -110,7 +118,7 @@ if (!function_exists('gh_top_language_count')) {
     function gh_top_language_count(string $owner, string $repo, int $ttl = 300, ?string $ghtoken = null, int $limit = 1): array
     {
         $url = "https://api.github.com/repos/$owner/$repo/languages";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
@@ -142,7 +150,7 @@ if (!function_exists('gh_user_stars_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -173,7 +181,7 @@ if (!function_exists('gh_repo_downloads')) {
         if ($cached !== null) return (int)$cached;
 
         $url = "https://api.github.com/repos/$owner/$repo/releases";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
@@ -213,7 +221,7 @@ if (!function_exists('gh_user_downloads_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -240,7 +248,7 @@ if (!function_exists('gh_repo_branches')) {
         $cached = gh_cache_get($cacheKey, $ttl);
         if ($cached !== null) return (int)$cached;
         $url = "https://api.github.com/repos/$owner/$repo/branches?per_page=100";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         $context = stream_context_create($opts);
         $json = @file_get_contents($url, false, $context);
@@ -262,7 +270,7 @@ if (!function_exists('gh_user_branches_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             $context = stream_context_create($opts);
             $json = @file_get_contents($url, false, $context);
@@ -293,7 +301,7 @@ if (!function_exists('gh_user_size_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -328,7 +336,7 @@ if (!function_exists('gh_user_forks_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -363,7 +371,7 @@ if (!function_exists('gh_user_issues_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -398,7 +406,7 @@ if (!function_exists('gh_user_watchers_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -435,7 +443,7 @@ if (!function_exists('gh_user_repos_count')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -468,7 +476,7 @@ if (!function_exists('gh_user_top_languages_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -518,7 +526,7 @@ if (!function_exists('gh_repo_pull_requests')) {
             return (int)$cached;
         }
         $url = "https://api.github.com/repos/{$owner}/{$repo}/pulls?state=all";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -546,7 +554,7 @@ if (!function_exists('gh_repo_merged_pull_requests')) {
         $page = 1;
         do {
             $url = "https://api.github.com/repos/{$owner}/{$repo}/pulls?state=closed&per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -583,7 +591,7 @@ if (!function_exists('gh_user_merged_pull_requests_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -618,7 +626,7 @@ if (!function_exists('gh_user_subscribers_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -701,7 +709,7 @@ if (!function_exists('gh_repo_files')) {
         $default_branch = $repoInfo['default_branch'] ?? 'main';
 
         $url = "https://api.github.com/repos/{$owner}/{$repo}/git/trees/{$default_branch}?recursive=1";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -732,7 +740,7 @@ if (!function_exists('gh_user_files_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -764,7 +772,7 @@ if (!function_exists('gh_repo_tags')) {
             return (int)$cached;
         }
         $url = "https://api.github.com/repos/{$owner}/{$repo}/tags?per_page=100";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -792,7 +800,7 @@ if (!function_exists('gh_user_tags_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -825,7 +833,7 @@ if (!function_exists('gh_user_followers')) {
         }
 
         $url = "https://api.github.com/users/{$user}";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -853,7 +861,7 @@ if (!function_exists('gh_user_following')) {
         }
 
         $url = "https://api.github.com/users/{$user}";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -880,7 +888,7 @@ if (!function_exists('gh_repo_projects')) {
             return (int)$cached;
         }
         $url = "https://api.github.com/repos/{$owner}/{$repo}/projects?per_page=100";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n", "Accept" => "application/vnd.github.v3+json"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n", "Accept" => "application/vnd.github.v3+json"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -908,7 +916,7 @@ if (!function_exists('gh_user_projects_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -940,7 +948,7 @@ if (!function_exists('gh_repo_releases')) {
             return (int)$cached;
         }
         $url = "https://api.github.com/repos/{$owner}/{$repo}/releases?per_page=100";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -968,7 +976,7 @@ if (!function_exists('gh_user_releases_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -1006,7 +1014,7 @@ if (!function_exists('gh_user_gists_info')) {
 
         do {
             $url = "https://api.github.com/users/{$user}/gists?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -1067,7 +1075,7 @@ if (!function_exists('gh_gist_forks_count')) {
             return (int)$cached;
         }
         $url = "https://api.github.com/gists/{$gistId}/forks";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -1096,7 +1104,7 @@ if (!function_exists('gh_repo_lines')) {
         $page = 1;
         do {
             $url = "https://api.github.com/repos/{$owner}/{$repo}/commits?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -1142,7 +1150,7 @@ if (!function_exists('gh_repo_milestones')) {
         $closed_count = 0;
         $url_open = "https://api.github.com/repos/{$owner}/{$repo}/milestones?state=open&per_page=100";
         $url_closed = "https://api.github.com/repos/{$owner}/{$repo}/milestones?state=closed&per_page=100";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -1176,7 +1184,7 @@ if (!function_exists('gh_repo_milestones_robust')) {
             return (int)$cached;
         }
         $url = "https://api.github.com/repos/{$owner}/{$repo}/milestones?state={$state}&per_page=100";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -1204,7 +1212,7 @@ if (!function_exists('gh_user_milestones_all')) {
         $page = 1;
         do {
             $url = "https://api.github.com/users/{$user}/repos?per_page=100&page={$page}";
-            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+            $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
             if ($ghtoken) {
                 $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
             }
@@ -1236,7 +1244,7 @@ if (!function_exists('gh_repo_compare_version')) {
             return $cached;
         }
         $url = "https://api.github.com/repos/{$owner}/{$repo}/releases/latest";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -1524,7 +1532,7 @@ if (!function_exists('gh_repo_issues_open')) {
         }
 
         $url = "https://api.github.com/repos/{$owner}/{$repo}";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -1554,7 +1562,7 @@ if (!function_exists('gh_repo_issues_closed')) {
 
         // Retrieve all closed items, including pull requests
         $url = "https://api.github.com/repos/{$owner}/{$repo}/issues?state=closed&per_page=100";
-        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.0\r\n"]];
+        $opts = ["http" => ["header" => "User-Agent: MiniBadges/1.2.0\r\n"]];
         if ($ghtoken) {
             $opts['http']['header'] .= "Authorization: token $ghtoken\r\n";
         }
@@ -1609,7 +1617,7 @@ GQL;
         $ch = curl_init('https://api.github.com/graphql');
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: bearer ' . $ghtoken,
-            'User-Agent: MiniBadges/1.0'
+            'User-Agent: MiniBadges/1.2.0'
         ]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['query' => $query]));
@@ -1680,7 +1688,7 @@ GQL;
         $ch = curl_init('https://api.github.com/graphql');
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: bearer ' . $ghtoken,
-            'User-Agent: MiniBadges/1.0'
+            'User-Agent: MiniBadges/1.2.0'
         ]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['query' => $query]));
@@ -1739,7 +1747,7 @@ if (!function_exists('gh_user_commits_complete')) {
             $reposUrl = "https://api.github.com/users/{$owner}/repos?per_page=100&type=public&page={$page}";
             $opts = [
                 "http" => [
-                    "header" => "User-Agent: MiniBadges/1.0\r\nAuthorization: token {$ghtoken}\r\n"
+                    "header" => "User-Agent: MiniBadges/1.2.0\r\nAuthorization: token {$ghtoken}\r\n"
                 ]
             ];
             $context = stream_context_create($opts);
@@ -1826,7 +1834,7 @@ if (!function_exists('gh_repo_commits_complete')) {
         $commitCount = 0;
         $opts = [
             "http" => [
-                "header" => "User-Agent: MiniBadges/1.0\r\nAuthorization: token {$ghtoken}\r\n"
+                "header" => "User-Agent: MiniBadges/1.2.0\r\nAuthorization: token {$ghtoken}\r\n"
             ]
         ];
         $context = stream_context_create($opts);
@@ -1874,7 +1882,7 @@ if (!function_exists('gh_repo_codesize')) {
 
         $opts = [
             "http" => [
-                "header" => "User-Agent: MiniBadges/1.0\r\nAuthorization: token {$ghtoken}\r\n"
+                "header" => "User-Agent: MiniBadges/1.2.0\r\nAuthorization: token {$ghtoken}\r\n"
             ]
         ];
         $context = stream_context_create($opts);
@@ -1904,7 +1912,7 @@ if (!function_exists('gh_user_codesize_all')) {
 
         $opts = [
             "http" => [
-                "header" => "User-Agent: MiniBadges/1.0\r\nAuthorization: token {$ghtoken}\r\n"
+                "header" => "User-Agent: MiniBadges/1.2.0\r\nAuthorization: token {$ghtoken}\r\n"
             ]
         ];
         $context = stream_context_create($opts);
@@ -1939,7 +1947,7 @@ if (!function_exists('gh_user_fullinfo')) {
 
         $opts = [
             "http" => [
-                "header" => "User-Agent: MiniBadges/1.0\r\nAuthorization: bearer {$ghtoken}\r\n",
+                "header" => "User-Agent: MiniBadges/1.2.0\r\nAuthorization: bearer {$ghtoken}\r\n",
                 "method" => "POST",
             ]
         ];
@@ -1982,3 +1990,690 @@ GQL
     }
 }
 
+
+if (!function_exists('mb_badge_normalize_color')) {
+        function mb_badge_normalize_color(?string $raw, string $fallback): string
+        {
+            global $config; // <-- Wichtig: Zugriff auf globale Variable
+
+            if ($raw === null || $raw === '' || $raw === '*') return $fallback;
+            $raw = strtolower(trim($raw));
+
+            // Verwende das Farbarray aus der globalen Konfiguration
+            $map = $config['colors'] ?? []; // Verwende den ?? Operator als Fallback
+
+            if (isset($map[$raw])) return $map[$raw];
+            $c = ltrim($raw, '#');
+            if (preg_match('/^[0-9a-f]{3}$/i', $c)) {
+                $c = $c[0] . $c[0] . $c[1] . $c[1] . $c[2] . $c[2];
+                return '#' . $c;
+            }
+            if (preg_match('/^[0-9a-f]{6}$/i', $c)) {
+                return '#' . $c;
+            }
+            return $fallback;
+        }
+    }
+
+    if (!function_exists('mb_badge_decode_text')) {
+        function mb_badge_decode_text(string $s): string
+        {
+            $s = urldecode($s);
+            $H = "\x01";
+            $U = "\x02";
+            $s = str_replace(['--', '__'], [$H, $U], $s);
+            $s = str_replace('_', ' ', $s);
+            $s = str_replace([$H, $U], ['-', '_'], $s);
+            return $s;
+        }
+    }
+
+    if (!function_exists('mb_badge_parse_color_pair')) {
+        function mb_badge_parse_color_pair(?string $seg): array
+        {
+            if ($seg === null || $seg === '') return [null, null];
+            $seg = urldecode($seg);
+            $H = "\x01";
+            $seg = str_replace('--', $H, $seg);
+            $parts = explode('-', $seg);
+            foreach ($parts as &$p) {
+                $p = str_replace($H, '-', $p);
+            }
+            return [$parts[0] ?? null, $parts[1] ?? null];
+        }
+    }
+    if (!function_exists('mb_badge_parse_iconpair')) {
+        function mb_badge_parse_iconpair(?string $seg): array
+        {
+            if ($seg === null || $seg === '') return [null, null];
+            $seg = urldecode($seg);
+            $H = "\x01";
+            $seg = str_replace('--', $H, $seg);
+            $parts = explode('-', $seg);
+            foreach ($parts as &$p) {
+                $p = str_replace($H, '-', $p);
+            }
+            if (count($parts) >= 2) {
+                $iconColor = array_pop($parts);
+                $iconName = implode('-', $parts);
+            } else {
+                $iconName = $parts[0];
+                $iconColor = null;
+            }
+            $iconName = str_replace('__', '_', $iconName);
+            $iconName = str_replace('_', ' ', $iconName);
+            return [$iconName, $iconColor];
+        }
+    }
+
+    // ------------------- Route pairs -------------------
+    [$routeIconName, $routeIconColor] = mb_badge_parse_iconpair($iconPair);
+    [$routeMsgColorRaw, $routeMsgTextColorRaw] = mb_badge_parse_color_pair($messagePair);
+    [$routeLblColorRaw, $routeLblTextColorRaw] = mb_badge_parse_color_pair($labelPair);
+
+    $iconRequested = $routeIconName ?: q('icon', null);
+    $iconColorRaw  = ($routeIconColor !== null && $routeIconColor !== '') ? $routeIconColor : (q('iconColor', null) ?? '*');
+
+    if ($routeLblColorRaw !== null && $routeLblColorRaw !== '') {
+        $colorLabel = mb_badge_normalize_color($routeLblColorRaw, $colorLabel);
+    }
+    if ($routeLblTextColorRaw !== null && $routeLblTextColorRaw !== '') {
+        $textColorLabel = mb_badge_normalize_color($routeLblTextColorRaw, $textColorLabel);
+    }
+    if ($routeMsgColorRaw !== null && $routeMsgColorRaw !== '') {
+        $colorMessage = mb_badge_normalize_color($routeMsgColorRaw, $colorMessage);
+    }
+    if ($routeMsgTextColorRaw !== null && $routeMsgTextColorRaw !== '') {
+        $textColorMessage = mb_badge_normalize_color($routeMsgTextColorRaw, $textColorMessage);
+    }
+    $iconColorNormalized = mb_badge_normalize_color($iconColorRaw, '#ffffff');
+
+    // ------------------- Cache Helper -------------------
+    if (!function_exists('gh_cache_get')) {
+        function gh_cache_get(string $key, int $ttl = 300)
+        {
+            $file = sys_get_temp_dir() . '/ghcache_' . md5($key) . '.json';
+            if (file_exists($file) && (filemtime($file) + $ttl) > time()) {
+                $data = file_get_contents($file);
+                return $data !== false ? json_decode($data, true) : null;
+            }
+            return null;
+        }
+    }
+    if (!function_exists('gh_cache_set')) {
+        function gh_cache_set(string $key, $data)
+        {
+            $file = sys_get_temp_dir() . '/ghcache_' . md5($key) . '.json';
+            file_put_contents($file, json_encode($data));
+        }
+    }
+    // ------------------- Repo Info -------------------
+    $repoInfo = gh_repo_info($owner, $repo, $ttl, $ghtoken);
+
+    // ------------------- Switch Metric -------------------
+    switch ($metric) {
+        // Case statement for 'lines'
+        case (preg_match('/^lines(?:-(added|deleted|all))?$/', $metric, $m) ? true : false):
+            $stats = gh_repo_lines($owner, $repo, $ttl, $ghtoken);
+            $text1 = '';
+            $text2 = '';
+            $type = $m[1] ?? 'all';
+
+            switch ($type) {
+                case 'added':
+                    $text1 = $L['lines_added'] ?? 'Lines added';
+                    $text2 = formatNumberShort($stats['added']);
+                    break;
+                case 'deleted':
+                    $text1 = $L['lines_deleted'] ?? 'Lines deleted';
+                    $text2 = formatNumberShort($stats['deleted']);
+                    break;
+                case 'all':
+                default:
+                    $text1 = $L['lines_all'] ?? 'Lines';
+                    $text2 = formatNumberShort($stats['total']);
+                    break;
+            }
+            break;
+        case (preg_match('/^milestones(?:-(open|closed|all|allopen|allclosed))?$/', $metric, $m) ? true : false):
+            $type = $m[1] ?? 'default';
+            $text1 = '';
+            $text2 = '';
+
+            // Metrics for a single repository
+            if (in_array($type, ['default', 'open', 'closed'])) {
+                switch ($type) {
+                    case 'open':
+                        $text1 = $L['milestones_open'] ?? 'Milestones (Open)';
+                        $text2 = formatNumberShort(gh_repo_milestones_robust($owner, $repo, $ttl, $ghtoken, 'open'));
+                        break;
+                    case 'closed':
+                        $text1 = $L['milestones_closed'] ?? 'Milestones (Closed)';
+                        $text2 = formatNumberShort(gh_repo_milestones_robust($owner, $repo, $ttl, $ghtoken, 'closed'));
+                        break;
+                    case 'default':
+                    default:
+                        $text1 = $L['milestones'] ?? 'Milestones';
+                        $text2 = formatNumberShort(gh_repo_milestones_robust($owner, $repo, $ttl, $ghtoken, 'all'));
+                        break;
+                }
+            }
+            // Metrics for all repositories of a user
+            else {
+                switch ($type) {
+                    case 'all':
+                        $text1 = $L['milestones_all'] ?? 'Milestones (All)';
+                        $text2 = formatNumberShort(gh_user_milestones_all($owner, $ttl, $ghtoken, 'all'));
+                        break;
+                    case 'allopen':
+                        $text1 = $L['milestones_allopen'] ?? 'Milestones (All Open)';
+                        $text2 = formatNumberShort(gh_user_milestones_all($owner, $ttl, $ghtoken, 'open'));
+                        break;
+                    case 'allclosed':
+                        $text1 = $L['milestones_allclosed'] ?? 'Milestones (All Closed)';
+                        $text2 = formatNumberShort(gh_user_milestones_all($owner, $ttl, $ghtoken, 'closed'));
+                        break;
+                }
+            }
+            break;
+        case 'stars':
+            $text1 = $L['stars'] ?? 'Stars';
+            $text2 = isset($repoInfo['stargazers_count']) ? formatNumberShort($repoInfo['stargazers_count']) : 'N/A';
+            break;
+        case 'stars-all':
+            $text1 = $L['stars_all'] ?? 'Stars (All)';
+            $text2 = formatNumberShort(gh_user_stars_all($owner, $ttl, $ghtoken));
+            break;
+        case 'forks':
+            $text1 = $L['forks'] ?? 'Forks';
+            $text2 = isset($repoInfo['forks_count']) ? formatNumberShort($repoInfo['forks_count']) : 'N/A';
+            break;
+        case 'forks-all':
+            $text1 = $L['forks_all'] ?? 'Forks (All)';
+            $text2 = formatNumberShort(gh_user_forks_all($owner, $ttl, $ghtoken));
+            break;
+        case 'issues':
+            $text1 = $L['issues'] ?? 'Issues';
+            $text2 = isset($repoInfo['open_issues_count']) ? formatNumberShort($repoInfo['open_issues_count']) : 'N/A';
+            break;
+        case 'issues-open':
+            $text1 = $L['issues'] ?? 'Issues';
+            $count = gh_repo_issues_open($owner, $repo, $ttl, $ghtoken);
+            $text2 = formatNumberShort($count) . ' open';
+            break;
+        case 'issues-closed':
+            $text1 = $L['issues'] ?? 'Issues';
+            $count = gh_repo_issues_closed($owner, $repo, $ttl, $ghtoken);
+            $text2 = formatNumberShort($count) . ' closed';
+            break;
+        case 'issues_all':
+            $text1 = $L['issues_all'] ?? 'Issues (All)';
+            $text2 = formatNumberShort(gh_user_issues_all($owner, $ttl, $ghtoken));
+            break;
+        case 'sponsors':
+            $text1 = 'Sponsors';
+            $count = gh_user_sponsors_count($owner, $ttl, $ghtoken);
+            $text2 = formatNumberShort($count);
+            break;
+        case 'watchers':
+            $text1 = $L['watchers'] ?? 'Watchers';
+            if (isset($repoInfo['subscribers_count'])) $text2 = formatNumberShort($repoInfo['subscribers_count']);
+            elseif (isset($repoInfo['watchers_count'])) $text2 = formatNumberShort($repoInfo['watchers_count']);
+            else $text2 = 'N/A';
+            break;
+        case 'watchers_all':
+            $text1 = $L['watchers_all'] ?? 'Watchers (All)';
+            $text2 = formatNumberShort(gh_user_watchers_all($owner, $ttl, $ghtoken));
+            break;
+        case 'downloads':
+            $text1 = $L['downloads'] ?? 'Downloads';
+            $text2 = formatNumberShort(gh_repo_downloads($owner, $repo, $ttl, $ghtoken));
+            break;
+        case 'downloads-latest':
+            $text1 = $L['downloads_latest'] ?? 'Downloads Latest Release';
+            $text2 = formatNumberShort(gh_repo_downloads_latest($owner, $repo, $ttl, $ghtoken));
+            break;
+        case 'downloads-all':
+            $text1 = $L['downloads_all'] ?? 'Downloads (All)';
+            $text2 = formatNumberShort(gh_user_downloads_all($owner, $ttl, $ghtoken));
+            break;
+        case 'branches':
+            $text1 = $L['branches'] ?? 'Branches';
+            $text2 = formatNumberShort(gh_repo_branches($owner, $repo, $ttl, $ghtoken));
+            break;
+        case 'branches-all':
+            $text1 = $L['branches_all'] ?? 'Branches (All)';
+            $text2 = formatNumberShort(gh_user_branches_all($owner, $ttl, $ghtoken));
+            break;
+        case 'release':
+            $text1 = $L['release'] ?? 'Release';
+            $rel = gh_repo_release($owner, $repo, $ttl, $ghtoken);
+            $text2 = $rel['tag_name'] ?? ($repoInfo['default_branch'] ?? 'N/A');
+            break;
+        case 'license':
+            $text1 = $L['license'] ?? 'License';
+            $text2 = $repoInfo['license']['spdx_id'] ?? ($repoInfo['license']['key'] ?? 'N/A');
+            break;
+        case 'top_language':
+            $text1 = $L['top_language'] ?? 'Top language';
+            $text2 = gh_top_language($owner, $repo, $ttl, $ghtoken) ?? 'N/A';
+            break;
+        case 'size':
+            $text1 = $L['size'] ?? 'Size';
+            $text2 = isset($repoInfo['size']) ? formatNumberShort($repoInfo['size']) . ' KB' : 'N/A';
+            break;
+        case 'size_all':
+            $text1 = $L['size_all'] ?? 'Size (All)';
+            $text2 = formatNumberShort(gh_user_size_all($owner, $ttl, $ghtoken)) . ' KB';
+            break;
+        case 'created_at':
+            $text1 = $L['created_at'] ?? 'Created';
+            $text2 = isset($repoInfo['created_at']) ? date('Y-m-d', strtotime($repoInfo['created_at'])) : 'N/A';
+            break;
+        case 'repos_count':
+            $text1 = $L['repos_count'] ?? 'Public Repos';
+            $text2 = formatNumberShort(gh_user_repos_count($owner, $ttl, $ghtoken));
+            break;
+        case (preg_match('/^top_languages_all(?:-(\d+))?$/', $metric, $m) ? true : false):
+            $limit = isset($m[1]) ? (int)$m[1] : 1;
+            $langs = gh_user_top_languages_all($owner, $ttl, $ghtoken, $limit);
+            if ($limit === 1) {
+                $text1 = $langs[0][0];
+                $text2 = $langs[0][1];
+            } else {
+                $pairs = [];
+                foreach ($langs as [$lang, $perc]) $pairs[] = "$lang $perc";
+                $text1 = $L['top_languages_all'] ?? 'Top languages (All)';
+                $text2 = implode(' | ', $pairs);
+            }
+            // For the special case where we want no percentage
+            if ($metric === 'top_languages_all' && isset($langs[0][0])) {
+                $text1 = $L['top_languages_all'] ?? 'Top language (All)';
+                $text2 = $langs[0][0];
+            }
+            break;
+        case 'prs':
+            $text1 = $L['pull_requests'] ?? 'Pull requests';
+            $text2 = formatNumberShort(gh_repo_pull_requests($owner, $repo, $ttl, $ghtoken));
+            break;
+        case 'prs-merged':
+            $text1 = $L['prs_merged'] ?? 'Merged PRs';
+            $text2 = formatNumberShort(gh_repo_merged_pull_requests($owner, $repo, $ttl, $ghtoken));
+            break;
+        case 'prs-mergedall':
+            $text1 = $L['prs_merged_all'] ?? 'Merged PRs (All)';
+            $text2 = formatNumberShort(gh_user_merged_pull_requests_all($owner, $ttl, $ghtoken));
+            break;
+        case 'prs-all':
+            $text1 = $L['pull_requests_all'] ?? 'PRs (All)';
+            $text2 = formatNumberShort(gh_user_pull_requests_all($owner, $ttl, $ghtoken));
+            break;
+        case 'subscribers':
+            $text1 = $L['subscribers_count'] ?? 'Subscribers';
+            $text2 = isset($repoInfo['subscribers_count']) ? formatNumberShort($repoInfo['subscribers_count']) : 'N/A';
+            break;
+        case 'subscribers-all':
+            $text1 = $L['subscribers_count_all'] ?? 'Subscribers (All)';
+            $text2 = formatNumberShort(gh_user_subscribers_all($owner, $ttl, $ghtoken));
+            break;
+        case 'successrate':
+            $text1 = $L['success_rate'] ?? 'Success Rate';
+            $text2 = gh_repo_success_rate($owner, $repo, $ttl, $ghtoken);
+            break;
+        case 'successrate-all':
+            $text1 = $L['success_rate_all'] ?? 'Success Rate (All)';
+            $text2 = gh_user_success_rate_all($owner, $ttl, $ghtoken);
+            break;
+        case 'files':
+            $text1 = $L['files'] ?? 'Files';
+            $text2 = formatNumberShort(gh_repo_files($owner, $repo, $ttl, $ghtoken));
+            break;
+        case 'files-all':
+            $text1 = $L['files_all'] ?? 'Files (All)';
+            $text2 = formatNumberShort(gh_user_files_all($owner, $ttl, $ghtoken));
+            break;
+        case 'tags':
+            $text1 = $L['tags'] ?? 'Tags';
+            $text2 = formatNumberShort(gh_repo_tags($owner, $repo, $ttl, $ghtoken));
+            break;
+        case 'tags-all':
+            $text1 = $L['tags_all'] ?? 'Tags (All)';
+            $text2 = formatNumberShort(gh_user_tags_all($owner, $ttl, $ghtoken));
+            break;
+        case 'follower':
+            $text1 = $L['follower'] ?? 'Followers';
+            $text2 = formatNumberShort(gh_user_followers($owner, $ttl, $ghtoken));
+            break;
+        case 'following':
+            $text1 = $L['following'] ?? 'Following';
+            $text2 = formatNumberShort(gh_user_following($owner, $ttl, $ghtoken));
+            break;
+        case 'projects':
+            $text1 = $L['projects'] ?? 'Projects';
+            $text2 = formatNumberShort(gh_repo_projects($owner, $repo, $ttl, $ghtoken));
+            break;
+        case 'projects-all':
+            $text1 = $L['projects_all'] ?? 'Projects (All)';
+            $text2 = formatNumberShort(gh_user_projects_all($owner, $ttl, $ghtoken));
+            break;
+        case 'releases':
+            $text1 = $L['releases'] ?? 'Releases';
+            $text2 = formatNumberShort(gh_repo_releases($owner, $repo, $ttl, $ghtoken));
+            break;
+        case 'releases_all':
+            $text1 = $L['releases_all'] ?? 'Releases (All)';
+            $text2 = formatNumberShort(gh_user_releases_all($owner, $ttl, $ghtoken));
+            break;
+        case (preg_match('/^gists(?:-(list|size|date|forks|listall|list(\d+))|-(size|forks)@(.+))?$/', $metric, $m) ? true : false):
+            $gists_info = gh_user_gists_info($owner, $ttl, $ghtoken);
+            $text1 = '';
+            $text2 = '';
+            // Check for specific formats (e.g. 'size@' or 'forks@')
+            if (isset($m[3]) && isset($m[4])) {
+                $type = $m[3];
+                $gist_name = $m[4];
+                $found_gist = null;
+                foreach ($gists_info['gists'] as $gist) {
+                    foreach ($gist['files'] as $file) {
+                        if (strtolower($file['name']) === strtolower($gist_name)) {
+                            $found_gist = $gist;
+                            break 2;
+                        }
+                    }
+                }
+                if (!$found_gist) {
+                    $text1 = $L['gist_not_found'] ?? 'Gist Not Found';
+                    $text2 = $gist_name;
+                } else {
+                    if ($type === 'size') {
+                        $text1 = $L['gist_size'] ?? "Gist: {$gist_name}";
+                        $text2 = formatSizeShort($found_gist['size']);
+                    } else { // type === 'forks'
+                        $forks_count = gh_gist_forks_count($found_gist['id'], $ttl, $ghtoken);
+                        $text1 = $L['gist_forks'] ?? "Gist: {$gist_name}";
+                        $text2 = formatNumberShort($forks_count);
+                    }
+                }
+            }
+            // Standard formats (e.g. 'gists' or 'gists-size')
+            else {
+                $type = $m[1] ?? 'default';
+                switch ($type) {
+                    case 'default':
+                        $text1 = $L['gists'] ?? 'Gists';
+                        $text2 = formatNumberShort($gists_info['count']);
+                        break;
+                    case (preg_match('/^list(\d+)$/', $type, $n) ? $type : false):
+                        $limit = (int)$n[1];
+                        $list_names = array_column(array_slice($gists_info['gists'], 0, $limit), 'description');
+                        $text1 = $L['gists_list_short'] ?? "Last {$limit} Gists";
+                        $text2 = implode(' | ', array_filter($list_names));
+                        if (empty($text2)) {
+                            $text2 = 'N/A';
+                        }
+                        break;
+                    case 'listall':
+                        $text1 = $L['gists_listall'] ?? 'All Gists';
+                        $list_names = array_column($gists_info['gists'], 'description');
+                        $text2 = implode(' | ', array_filter($list_names));
+                        if (empty($text2)) {
+                            $text2 = 'N/A';
+                        }
+                        break;
+                    case 'size':
+                        $text1 = $L['gists_size'] ?? 'Total Size';
+                        $text2 = formatSizeShort($gists_info['total_size']);
+                        break;
+                    case 'date':
+                        $text1 = $L['gists_date'] ?? 'Last Gist';
+                        if ($gists_info['latest_gist_date']) {
+                            $text2 = date('Y-m-d', strtotime($gists_info['latest_gist_date']));
+                        } else {
+                            $text2 = 'N/A';
+                        }
+                        break;
+                    case 'forks':
+                        $total_forks = 0;
+                        foreach ($gists_info['gists'] as $gist) {
+                            $total_forks += gh_gist_forks_count($gist['id'], $ttl, $ghtoken);
+                        }
+                        $text1 = $L['gists_forks'] ?? 'Gist Forks';
+                        $text2 = formatNumberShort($total_forks);
+                        break;
+                }
+            }
+            break;
+            break;
+        case (preg_match('/^checkversion@(.+)$/', $metric, $m) ? true : false):
+            $current_version = $m[1];
+            $text1 = '';
+            $text2 = '';
+            // Handle fallback if no version is provided
+            if (empty($current_version)) {
+                $text1 = $L['version_check'] ?? 'Version Check';
+                $text2 = $L['no_version_found'] ?? 'No version provided';
+            } else {
+                $comparison = gh_repo_compare_version($owner, $repo, $current_version, $ttl, $ghtoken);
+                switch ($comparison['status']) {
+                    case 'ok':
+                        $text1 = $L['check_release'] ?? 'Check Release';
+                        $text2 = $L['check_ok'] ?? 'OK';
+                        break;
+                    case 'new_release':
+                        $text1 = $L['new_release_available'] ?? 'New release available:';
+                        $text2 = $comparison['latest_version'];
+                        break;
+                    case 'error':
+                    default:
+                        $text1 = $L['version_check'] ?? 'Version Check';
+                        $text2 = $L['error'] ?? $comparison['message'];
+                        break;
+                }
+            }
+            break;
+        case (preg_match('/^top_language_count(?:-(\d+))?$/', $metric, $m) ? true : false):
+            $limit = isset($m[1]) ? (int)$m[1] : 1;
+            $langs = gh_top_language_count($owner, $repo, $ttl, $ghtoken, $limit);
+            if ($limit === 1) {
+                $text1 = $langs[0][0];
+                $text2 = $langs[0][1];
+            } else {
+                $pairs = [];
+                foreach ($langs as [$lang, $perc]) $pairs[] = "$lang $perc";
+                $text1 = $L['top_languages'] ?? 'Top languages';
+                $text2 = implode(' | ', $pairs);
+            }
+            break;
+        case (preg_match('/^push(?:-(time|datetime|info|lines))?$/', $metric, $m) ? true : false):
+            $subMetric = $m[1] ?? 'default';
+            $text1 = '';
+            $text2 = '';
+            $pushInfo = gh_push_info($owner, $repo, $ttl, $ghtoken);
+            switch ($subMetric) {
+                case 'time':
+                    $text1 = $L['push_time'] ?? 'Last Push';
+                    $text2 = ($pushInfo['latest']['datetime'] !== 'N/A') ? date('H:i:s', strtotime($pushInfo['latest']['datetime'])) : 'N/A';
+                    break;
+                case 'datetime':
+                    $text1 = $L['push_datetime'] ?? 'Last Push';
+                    $text2 = $pushInfo['latest']['datetime'] ?? 'N/A';
+                    break;
+                case 'lines':
+                    $text1 = $L['push_lines'] ?? 'Lines';
+                    $text2 = "+{$pushInfo['latest']['lines_added']} | -{$pushInfo['latest']['lines_deleted']}";
+                    break;
+                case 'info':
+                    $text1 = $L['push_info'] ?? 'Last Push Info';
+                    $text2 = "{$pushInfo['latest']['date']} | +{$pushInfo['latest']['lines_added']} -{$pushInfo['latest']['lines_deleted']}";
+                    break;
+                default:
+                    $text1 = $L['push_date'] ?? 'Last Push';
+                    $text2 = $pushInfo['latest']['date'] ?? 'N/A';
+                    break;
+            }
+            break;
+        // Case statement for 'discussions'
+        case (preg_match('/^discussions(?:-(lastdate|lastupdate|lasttitle|lastauthor|count))?$/', $metric, $m) ? true : false):
+            $stats = gh_repo_discussions($owner, $repo, $ttl, $ghtoken);
+            $text1 = '';
+            $text2 = '';
+            $type = $m[1] ?? 'count'; // Default auf count
+
+            switch ($type) {
+                case 'lastdate':
+                    $text1 = $L['discussions_lastdate'] ?? 'Last Discussion Date';
+                    $text2 = $stats['last']['createdAt'] ?? 'N/A';
+                    break;
+                case 'lastupdate':
+                    $text1 = $L['discussions_lastupdate'] ?? 'Last Discussion Update';
+                    $text2 = $stats['last']['updatedAt'] ?? 'N/A';
+                    break;
+                case 'lasttitle':
+                    $text1 = $L['discussions_lasttitle'] ?? 'Last Discussion Title';
+                    $text2 = $stats['last']['title'] ?? 'N/A';
+                    break;
+                case 'lastauthor':
+                    $text1 = $L['discussions_lastauthor'] ?? 'Last Discussion Author';
+                    $text2 = $stats['last']['author'] ?? 'N/A';
+                    break;
+                case 'count':
+                default:
+                    $text1 = $L['discussions_count'] ?? 'Discussions';
+                    $text2 = formatNumberShort($stats['count']);
+                    break;
+            }
+            break;
+        case (preg_match('/^commit(?:-(time|datetime|info|lines))?$/', $metric, $m) ? true : false):
+            $subMetric = $m[1] ?? 'default';
+            $text1 = '';
+            $text2 = '';
+            $commitInfo = gh_commit_info($owner, $repo, $ttl, $ghtoken);
+            switch ($subMetric) {
+                case 'time':
+                    $text1 = $L['commit_time'] ?? 'Last Commit';
+                    $text2 = ($commitInfo['latest']['datetime'] !== 'N/A') ? date('H:i:s', strtotime($commitInfo['latest']['datetime'])) : 'N/A';
+                    break;
+                case 'datetime':
+                    $text1 = $L['commit_datetime'] ?? 'Last Commit';
+                    $text2 = $commitInfo['latest']['datetime'] ?? 'N/A';
+                    break;
+                case 'lines':
+                    $text1 = $L['commit_lines'] ?? 'Lates Commit';
+                    $text2 = "+{$commitInfo['latest']['lines_added']} | -{$commitInfo['latest']['lines_deleted']}";
+                    break;
+                case 'info':
+                    $text1 = $L['commit_info'] ?? 'Last Commit Info';
+                    $text2 = "{$commitInfo['latest']['date']} | +{$commitInfo['latest']['lines_added']} -{$commitInfo['latest']['lines_deleted']}";
+                    break;
+                default:
+                    $text1 = $L['commit_date'] ?? 'Last Commit';
+                    $text2 = $commitInfo['latest']['date'] ?? 'N/A';
+                    break;
+            }
+            break;
+        case (preg_match('/^commits(?:-(all|last|last-info))?(?:@([\w\-\_]+))?$/', $metric, $m) ? true : false):
+            $text1 = '';
+            $text2 = '';
+            $type = $m[1] ?? 'repo';
+            $branchFilter = $m[2] ?? null;
+            switch ($type) {
+                case 'all':
+                    $stats = gh_user_commits_complete($owner, $ttl, $ghtoken);
+                    $text1 = $L['commits_all'] ?? 'Commits';
+                    $text2 = formatNumberShort($stats['total']);
+                    break;
+                case 'last':
+                    $stats = gh_user_commits_complete($owner, $ttl, $ghtoken);
+                    $text1 = $L['commits_last'] ?? 'Last Commit';
+                    $text2 = $stats['last']['date'] ?? 'N/A';
+                    break;
+                case 'last-info':
+                    $stats = gh_user_commits_complete($owner, $ttl, $ghtoken);
+                    $text1 = $L['commits_last_info'] ?? 'Last Commit Info';
+                    if ($stats['last']) {
+                        $text2 = $stats['last']['date'] .
+                            " | +{$stats['last']['lines_added']} -{$stats['last']['lines_deleted']}";
+                    } else {
+                        $text2 = 'N/A';
+                    }
+                    break;
+                case 'repo':
+                default:
+                    $count = gh_repo_commits_complete($owner, $repo, $ttl, $ghtoken, $branchFilter);
+                    $text1 = $L['commits_repo'] ?? 'Commits';
+                    if ($branchFilter) {
+                        $text1 .= " ($branchFilter)";
+                    }
+                    if ($count === -1) {
+                        $text2 = "Branch not found";
+                    } else {
+                        $text2 = formatNumberShort($count);
+                    }
+                    break;
+            }
+            break;
+        case (preg_match('/^codesize(?:-all)?$/', $metric) ? true : false):
+            if (str_starts_with($metric, 'codesize-all')) {
+                $bytes = gh_user_codesize_all($owner, $ttl, $ghtoken);
+                $text1 = $L['codesize_all'] ?? 'Code Size (All Repos)';
+                $text2 = formatBytesShort($bytes);
+            } else {
+                $bytes = gh_repo_codesize($owner, $repo, $ttl, $ghtoken);
+                $text1 = $L['codesize_repo'] ?? 'Code Size';
+                $text2 = formatBytesShort($bytes);
+            }
+            break;
+        case 'name':
+            $user = gh_user_fullinfo($owner, $ttl, $ghtoken);
+            $text1 = $L['name_label'] ?? 'Hello, my name is';
+            $text2 = $user['name'] ?? $user['login'] ?? 'Unknown';
+            break;
+        case 'company':
+            $user = gh_user_fullinfo($owner, $ttl, $ghtoken);
+            $text1 = $L['company_label'] ?? 'Company';
+            $text2 = $user['company'] ?? ($L['no_company'] ?? 'No value set');
+            break;
+        case 'location':
+            $user = gh_user_fullinfo($owner, $ttl, $ghtoken);
+            $text1 = $L['location_label'] ?? "I'm from";
+            $text2 = $user['location'] ?? ($L['no_location'] ?? 'Somewhere in the matrix 🌌');
+            break;
+        case 'status':
+            $user = gh_user_fullinfo($owner, $ttl, $ghtoken);
+            $text1 = $L['status_label'] ?? 'Status';
+            if (!empty($user['status'])) {
+                $text2 = ($user['status']['emoji'] ?? '') . ' ' . ($user['status']['message'] ?? '');
+            } else {
+                $text2 = $L['no_status'] ?? 'No status set';
+            }
+            break;
+        case (preg_match('/^(created|updated)At(?:-since)?$/', $metric, $m) ? true : false):
+            $user = gh_user_fullinfo($owner, $ttl, $ghtoken);
+            $field = $m[1] . 'At';
+            $dateStr = $user[$field] ?? null;
+
+            if (!$dateStr) {
+                $text1 = $m[1] === 'created' ? ($L['account_created'] ?? 'Account created') : ($L['last_updated'] ?? 'Last updated');
+                $text2 = $L['no_value'] ?? 'N/A';
+                break;
+            }
+            $date = new DateTime($dateStr);
+            if (str_ends_with($metric, '-since')) {
+                $now = new DateTime();
+                $diff = $now->diff($date);
+                if ($diff->y > 0) {
+                    $text2 = $diff->y . ' ' . ($diff->y > 1 ? ($L['time_year_plural'] ?? 'years') : ($L['time_year_singular'] ?? 'year'));
+                } elseif ($diff->m > 0) {
+                    $text2 = $diff->m . ' ' . ($diff->m > 1 ? ($L['time_month_plural'] ?? 'months') : ($L['time_month_singular'] ?? 'month'));
+                } else {
+                    $text2 = $diff->d . ' ' . ($diff->d > 1 ? ($L['time_day_plural'] ?? 'days') : ($L['time_day_singular'] ?? 'day'));
+                }
+            } else {
+                $text2 = $date->format('Y-m-d');
+            }
+            $text1 = $m[1] === 'created' ? ($L['account_created'] ?? 'Account created') : ($L['last_updated'] ?? 'Last updated');
+            break;
+        default:
+            $text1 = 'Metric';
+            $text2 = 'N/A';
+    }
