@@ -1,5 +1,6 @@
 <?php
 return [
+    // GitHub
     // Allgemein
     'stars'                     => 'Sterne',
     'forks'                     => 'Forks',
@@ -88,4 +89,101 @@ return [
     'check_release'             => 'Release prüfen',
     'check_ok'                  => 'OK',
     'error'                     => 'Fehler',
+
+    // Benutzer-Infos (Cases)
+    'name_label'                => 'Hallo, mein Name ist',   
+    'company_label'             => 'Firma',                   
+    'no_company'                => 'Kein Eintrag',            
+    'location_label'            => 'Ich komme aus',          
+    'no_location'               => 'Irgendwo in der Matrix 🌌', 
+    'status_label'              => 'Status',                 
+    'no_status'                 => 'Kein Status gesetzt',    
+    'account_created'           => 'Konto erstellt',         
+    'last_updated'              => 'Zuletzt aktualisiert',   
+    'time_year_singular'        => 'Jahr',                   
+    'time_year_plural'          => 'Jahre',                  
+    'time_month_singular'       => 'Monat',                  
+    'time_month_plural'         => 'Monate',                 
+    'time_day_singular'         => 'Tag',                    
+    'time_day_plural'           => 'Tage',                   
+
+    // Commit/Push Detail-Felder (Cases)
+    'commits_repo'              => 'Commits',                
+    'commits_all'               => 'Commits (Alle)',         
+    'commits_last'              => 'Letzter Commit (Datum)', 
+    'commits_last_info'         => 'Letzter Commit (Info)',  
+
+    // Diskussionen (Cases)
+    'discussions_count'         => 'Diskussionen',              
+    'discussions_lastdate'      => 'Letzte Diskussion (Datum)', 
+    'discussions_lastupdate'    => 'Letzte Diskussion (Update)',
+    'discussions_lasttitle'     => 'Letzter Diskussionstitel',  
+    'discussions_lastauthor'    => 'Letzter Diskussion-Autor',  
+
+
+    // Codeberg
+    // Allgemein / Basics
+    'name'                          => 'Name',
+    'language'                      => 'Sprache',
+    'updated_at'                    => 'Letztes Update',
+    'branch_default'                => 'Standard-Branch',
+
+    // Issues (Einzel + Alle Repos)
+    'issues_open'                   => 'Offene Issues',
+    'issues_closed'                 => 'Geschlossene Issues',
+    'issues_total'                  => 'Alle Issues',
+    'issues_allopen'                => 'Offene Issues (Alle Repos)',
+    'issues_all'                    => 'Issues (Alle Repos)',
+    'issues_allclosed'              => 'Geschlossene Issues (Alle Repos)',
+
+    // Pull Requests (Einzel + Alle Repos)
+    'prs_total'                     => 'Alle PRs',
+    'prs_open'                      => 'Offene PRs',
+    'prs_closed'                    => 'Geschlossene PRs',
+    'prs_all'                       => 'PRs (Alle Repos)',
+    'prs_allopen'                   => 'Offene PRs (Alle Repos)',
+    'prs_allclosed'                 => 'Geschlossene PRs (Alle Repos)',
+
+    // Releases & Versionen
+    'release_label'                 => 'Letztes Release',
+    'release_tag_label'             => 'Neuester Tag',
+    'release_check_label'           => 'Release-Überprüfung',
+    'release_new_label'             => 'Neues Release verfügbar',
+    'releases_label'                => 'Releases gesamt',
+
+    // Benutzer / User
+    'name_label'                    => 'Hallo, mein Name ist',
+    'location_label'                => 'Ich komme aus',
+    'no_location'                   => 'Irgendwo in der Matrix 🌌',
+    'no_company'                    => 'keine Angabe',
+    'created'                       => 'Erstellt',
+    'followers'                     => 'Follower',
+    'following'                     => 'Folge ich',
+    'stars_give'                    => 'Vergebene Stars',
+    'repos'                         => 'Öffentliche Repositories',
+    'register_on'                   => 'Registriert am',
+    'register_since'                => 'Registriert seit',
+
+    // Commits
+    'last_commit'                   => 'Letzter Commit',
+
+    // Milestones
+    'milestones_info'               => 'Meilensteine Info',
+    'milestones_info_open'          => 'Offene Meilensteine (Info)',
+    'milestones_info_closed'        => 'Geschlossene Meilensteine (Info)',
+    'milestones_all_open'           => 'Meilensteine (Alle Offen)',
+    'milestones_all_closed'         => 'Meilensteine (Alle Geschlossen)',
+
+    // Downloads
+    'downloads'                     => 'Downloads',
+    'downloads_latest'              => 'Downloads (Letztes Release)',
+    'downloads_all'                 => 'Downloads (Alle)',
+
+    // Zusätzliche Labels für „all“-Summen
+    'stars_all'                     => 'Stars (Alle)',
+    'watchers_all'                  => 'Beobachter (Alle)',
+    'forks_all'                     => 'Forks (Alle)',
+    'size_all'                      => 'Größe (Alle)',
+    'releases_all'                  => 'Releases (Alle)',
+
 ];
