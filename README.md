@@ -4,7 +4,17 @@
 > The [**Wiki**](https://commitcloud.net/RonDevHub/Mini-Badges/wiki) is still **under construction**.
 > Support: [**Matrix Chat**](https://matrix.to/#/#mini-badges:matrix.s3cr.net)
 ---
-![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/created_at) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/stars) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/issues) ![GitHub Repo language](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/top_language) ![GitHub Repo license](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/license) ![GitHub Repo release](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/release) ![GitHub Repo release](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/forks) ![GitHub Repo downlods](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/downloads) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/watchers) ![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/commit-info) ![GitHub Repo downlods](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/branches)
+![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/created_at)
+![GitHub Repo stars](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/stars)
+![Issues](https://mini-badges.rondevhub.de/forgejo/RonDevHub/Mini-Badges/issues)
+![GitHub Repo language](https://mini-badges.rondevhub.de/forgejo/RonDevHub/Mini-Badges/language)
+![GitHub Repo license](https://mini-badges.rondevhub.de/forgejo/RonDevHub/Mini-Badges/license/*/*/*/c1d82f-222)
+![Release](https://mini-badges.rondevhub.de/forgejo/RonDevHub/Mini-Badges/release)
+![Forks](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/forks)
+![Watchers](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/watchers)
+![Last update](https://mini-badges.rondevhub.de/forgejo/RonDevHub/Mini-Badges/updated-since "Last update")
+![GitHub Repo downlods](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/branches)
+![Milestones Info](https://mini-badges.rondevhub.de/forgejo/RonDevHub/Mini-Badges/milestonesinfo "Milestones Info")
 
 [![Buy me a coffee](https://mini-badges.rondevhub.de/icon/cuptogo/Buy_me_a_Coffee-c1d82f-222/social "Buy me a coffee")](https://www.buymeacoffee.com/RonDev)
 [![Buy me a coffee](https://mini-badges.rondevhub.de/icon/cuptogo/ko--fi.com-c1d82f-222/social "Buy me a coffee")](https://ko-fi.com/U6U31EV2VS)
