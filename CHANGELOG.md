@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.2.0-beta] – ❓
+## [1.2.0] – [2025-10-21]
 ### Added Codeberg Integration
 - [2025-10-03] New integration for badges from :codeberg: Codeberg 
 - [2025-10-03] Metrics added per repo: `stars`, `name`, `license`, `language`, `created-at`, `updated-at`, `forks`, `issues`, `issues-open`, `issues-closed`, `prs`, `prs-open`, `prs-closed`, `size`, `watchers`, `branch-default`, `release`, `releases`, `release-tag` and `release@`
