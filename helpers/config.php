@@ -25,6 +25,12 @@ return [
     // Codeberg Token (Personal Access Token)
     'codebergToken' => '',
 
+    // Allowed owners for Forgejo badges, Example: ['owner1', 'owner2'] or [] for all
+    'allowedForgejoOwners' => ['owner1'], // only these allowed
+    'forgejoURL' => 'https://example.net', // Forgejo instance URL
+    // Forgejo Token (Personal Access Token)
+    'forgejoToken' => '',
+
     // HTTP cache headers for SVG output
     'svgMaxAge'           => 300,
 
