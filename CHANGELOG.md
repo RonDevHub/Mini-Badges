@@ -1,20 +1,26 @@
 # Changelog
 
-## [1.1.0-stable] – 2025-09-26
-### Added
-- [2025-09-12] New styles added: `classic`, `social`, `minimalist` & `pill`
-- [2025-09-12] New metrics to display open and closed issues of a repo `issues-open`, `issues-closed`
-- [2025-09-15] New metric to display the number of sponsors `sponsors` *(Query only possible with API)*
-- [2025-09-15] New metrics for discussions of a repo have been added `discussions` for count in addition to `-lastdate`, `-lastupdate`, `-lasttitle`, `-lastauthor` *(Query only possible with API)*
-- [2025-09-16] New metrics for `commits` to output all commits of a repo, with example `commits@branchname` only all commits of the branch, further metrics `-all`, `-last`, `-last-info`
-- [2025-09-16] New metrics for `codesize` which prints the code size of a repo, with `-all` all repos *(only the default branch)*
-- [2025-09-22] New metrics for profile date: `name`, `company`, `location`, `status`, `createdAt`, `createdAt-since`, `updatedAt` an `updatedAt-since` *(Query only possible with API)*
+## [1.2.0-beta] – ❓
+### Added Codeberg Integration
+- [2025-10-03] New integration for badges from :codeberg: Codeberg 
+- [2025-10-03] Metrics added per repo: `stars`, `name`, `license`, `language`, `created-at`, `updated-at`, `forks`, `issues`, `issues-open`, `issues-closed`, `prs`, `prs-open`, `prs-closed`, `size`, `watchers`, `branch-default`, `release`, `releases`, `release-tag` and `release@`
+- [2025-10-03] Metrics added for all repos: `issues-all`, `issues-allopen`, `issues-allclosed`, `prs-all`, `prs-allopen`, `prs-allclosed`
+- [2025-10-03] Metrics added for user info: `username`, `location`, *`created` is no longer supported and has been renamed to* `register`, `followers`, `following`, `stars-give`
+- [2025-10-06] Metrics added for all repos: `stars-all`, `forks-all`, `watchers-all`, `size-all`, `releases-all`, `lastcommit`, `lastcommit-info`, `lastcommit-infos`, `milestones-all`, `milestones-allopen`, `milestones-allclosed`
+- [2025-10-06] Metrics added per repo: `milestones`, `milestones-open`, `milestones-closed`, `milestonesinfo`, `milestonesinfo-open`, `milestonesinfo-closed`
+- [2025-10-18] Metrics added per repo: `downloads`, `downloads-latest`
+- [2025-10-18] Metrics added for all repo: `downloads-all`, `respos`
+- [2025-10-21] Metrics added: `created-since`, `updated-since`, `register-since`
+
+### Added generally
+- [2025-10-20] Codeberg Badges added to Wiki page
+- [2025-10-20] Languages ​​updated (en,de,es,it,fr,uk)
+- [2025-10-20] The code has been cleaned up and optimized a bit
 
 ### Changed
-- [2025-09-08] The metrics for `follower` and `following` have been reworked, and the `-name` function has been removed for both. Github's REST API doesn't allow listing the last name sorted by date. The number of followers and followings will still be displayed accurately.
+- [2025-10-18] Unnecessary API queries
+- [2025-10-21] Metric `created` in the user info has been renamed to `register`
 
 ### Fixed
-- [2025-09-15] The cache has been optimized
-- [2025-09-15] The `allowedOwners` function in the configuration has been fixed and is now working again
-- [2025-09-16] Fixed an issue with calls via the API key when specified
-
+- [2025-10-06] Functions have been adjusted so that the information is cached with fewer API calls
+- [2025-10-21] Fixed a small bug in the calculation of the time elapsed since the account was created, in the Github badges

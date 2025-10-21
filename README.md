@@ -1,5 +1,6 @@
-# Mini-Badges (stable) <sup>![I❤️PHP](https://mini-badges.rondevhub.de/icon/php/I❤️U-000000-fff/pill/-787CB5)</sup>
-> **🫵 Note:**  
+# Mini-Badges (beta) <sup>![I❤️PHP](https://mini-badges.rondevhub.de/icon/php/I❤️U-000000-fff/pill/-787CB5)</sup>
+> **🫵 Note:**
+> This branch is currently in **Beta**.  
 > If you like, you can try the `beta` branch and test it out.  
 > Please keep in mind that bugs may still occur here and there.  
 > The [**Wiki**](https://commitcloud.net/RonDevHub/Mini-Badges/wiki) is still **under construction**.
@@ -64,7 +65,7 @@ Examples:
 
 ---
 
-### 🔹 GitHub
+### :computer: GitHub
 
 **URL pattern:**  
 `/github/{owner}/{repo}/{metric}/{style}/{icon}-{iconColor}/{lang}/{backgroundColorMessage}-{textColorMessage}/{backgroundLabelColor}-{textColorLabel}`
@@ -107,10 +108,17 @@ Examples:
 
 ---
 
-### 🔧 GitHub-specific
+### :computer: GitHub-specific
 - `{metric}` - For example `stars`, `license`, `issues` ... more metrics are listed in the **wiki**
 - `{owner}` – GitHub user/org
 - `{repo}` – GitHub repository
+
+---
+
+### :codeberg:  Codeberg-specific
+- `{metric}` - For example `stars`, `license`, `issues` ... more metrics are listed in the **CHANGELOG.md**
+- `{owner}` – Codeberg user/org
+- `{repo}` – Codeberg repository
 
 ---
 
