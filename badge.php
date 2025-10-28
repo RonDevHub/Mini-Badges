@@ -1,5 +1,5 @@
 <?php
-// Mini-Badges - Shields.io Style
+// Mini-Badges - Shields.io Style 
 mb_internal_encoding('UTF-8');
 $config = include __DIR__ . '/helpers/config.php';
 
