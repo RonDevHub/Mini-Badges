@@ -1,4 +1,4 @@
-# Mini-Badges <sup>![I❤️PHP](https://mini-badges.rondevhub.de/icon/php/I❤️U-000000-fff/pill/-787CB5)</sup>
+# Mini-Badges <sup>![I❤️PHP](https://mini-badges.rondevhub.de/icon/php/I❤️U-000000-fff/pill/-787CB5)</sup> 
 > 🫵 Please note that this is not a complete alternative to Shields.io, nor is it intended to replace or extend it. This is a small project I created for personal use. It is aimed at anyone who wants to run their own badges privately. It is not designed to be used as a service for multiple users.
 > Please also keep in mind that, due to API calls, this project may eventually reach its limits. Nevertheless, I hope that some people will  enjoy it and perhaps make use of it.
 > The [**Wiki**](https://commitcloud.net/RonDevHub/Mini-Badges/wiki) is still **under construction**.
