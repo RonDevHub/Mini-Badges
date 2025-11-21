@@ -19,6 +19,7 @@ require_once __DIR__ . '/../badge.php';
         exit;
     }
 
+
 function gh_cache_path(string $key): string
 {
     return dirname(__DIR__) . '/cache/' . preg_replace('~[^a-zA-Z0-9_.-]~', '_', $key) . '.json';
