@@ -140,4 +140,4 @@ Examples:
 ---
 
 ## 📜 License
-![GitHub Repo license](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/license)
+![GitHub Repo license](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/license) 
