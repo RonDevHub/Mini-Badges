@@ -34,7 +34,7 @@ pipeline {
                     def commit = env.GIT_COMMIT
                     echo "🔑 Commit: ${commit}"
 
-                    withCredentials([string(credentialsId: 'forgejo-token', variable: 'GITEA_TOKEN')]) {
+                    withCredentials([string(credentialsId: 'forgejo-token-string', variable: 'GITEA_TOKEN')]) {
 
                         // Pending Status an Forgejo
                         sh """
