@@ -15,7 +15,7 @@
 ![Last update](https://mini-badges.rondevhub.de/forgejo/RonDevHub/Mini-Badges/updated-since "Last update")
 ![GitHub Repo downlods](https://mini-badges.rondevhub.de/github/RonDevHub/Mini-Badges/branches)
 ![Milestones Info](https://mini-badges.rondevhub.de/forgejo/RonDevHub/Mini-Badges/milestonesinfo "Milestones Info")
-![Build Status](https://jenkins.commitcloud.net/job/Mini-Badges-Test/badge/icon)
+![Build Status](https://jenkins.commitcloud.net/job/Badges/badge/icon)
 
 [![Buy me a coffee](https://mini-badges.rondevhub.de/icon/cuptogo/Buy_me_a_Coffee-c1d82f-222/social "Buy me a coffee")](https://www.buymeacoffee.com/RonDev)
 [![Buy me a coffee](https://mini-badges.rondevhub.de/icon/cuptogo/ko--fi.com-c1d82f-222/social "Buy me a coffee")](https://ko-fi.com/U6U31EV2VS)
