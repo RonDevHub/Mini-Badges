@@ -30,11 +30,13 @@ pipeline {
         stage('Badge Test') {
             steps {
                 script {
-                    def commit = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
+                    // Commit-Hash direkt aus Jenkins (kein Git im Container nötig)
+                    def commit = env.GIT_COMMIT
                     echo "🔑 Commit: ${commit}"
 
                     withCredentials([string(credentialsId: 'forgejo-token', variable: 'GITEA_TOKEN')]) {
 
+                        // Pending Status an Forgejo
                         sh """
                         curl -X POST "https://commitcloud.net/api/v1/repos/${REPO}/statuses/${commit}" \
                             -H "Content-Type: application/json" \
@@ -42,11 +44,14 @@ pipeline {
                             -d '{ "state": "pending", "description": "Badge Test running", "context": "${CONTEXT}" }'
                         """
 
+                        // Badge erzeugen
                         sh "php badge.php type=static left=Hallo right=Welt style=flat > ${BADGE_FILE}"
 
+                        // Badge prüfen
                         def status = fileExists(BADGE_FILE) ? "success" : "failure"
                         echo "📦 Badge File Status: ${status}"
 
+                        // Ergebnis an Forgejo
                         sh """
                         curl -X POST "https://commitcloud.net/api/v1/repos/${REPO}/statuses/${commit}" \
                             -H "Content-Type: application/json" \
