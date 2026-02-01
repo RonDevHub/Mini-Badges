@@ -15,6 +15,7 @@
 ### Added generally
 - [21.10.2025] .htaccess added URL for Forgejo Badges
 - [21.10.2025] Values ​​for the Forgejo instance have been added to the config file
+- [01.02.2025] Dutch language added
 
 ### Changed
 
