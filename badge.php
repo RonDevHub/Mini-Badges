@@ -78,6 +78,7 @@ $colorMessage = normalizeColor(q('colorMessage'), $config['defaultMessageColor']
 $textColorLabel = normalizeColor(q('textColorLabel'), $config['defaultTextColor']);
 $textColorMessage = normalizeColor(q('textColorMessage'), $config['defaultTextColor']);
 $fontFamily = $config['fontFamily'];
+$fontWeight = $config['fontWeight'];
 
 // Plastic gloss / light effect
 $defs = '';
@@ -227,8 +228,8 @@ if ($type === 'static') {
     echo '<g transform="translate(' . $wLeft . ',0)"><path d="' . path_right_rounded($wRight, $h, $radius) . '" fill="' . $colorMessage . '"/></g>';
 
     // Texts
-    echo '<text x="' . ($wLeft / 2) . '" y="' . $yText . '" fill="' . $textColorLabel . '" font-family="' . esc($fontFamily) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($textLeft) . '</text>';
-    echo '<text x="' . ($wLeft + $wRight / 2) . '" y="' . $yText . '" fill="' . $textColorMessage . '" font-family="' . esc($fontFamily) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($textRight) . '</text>';
+    echo '<text x="' . ($wLeft / 2) . '" y="' . $yText . '" fill="' . $textColorLabel . '" font-family="' . esc($fontFamily) . '" font-weight="' . esc($fontWeight) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($textLeft) . '</text>';
+    echo '<text x="' . ($wLeft + $wRight / 2) . '" y="' . $yText . '" fill="' . $textColorMessage . '" font-family="' . esc($fontFamily) . '" font-weight="' . esc($fontWeight) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($textRight) . '</text>';
 
     // Plastic gloss
     if (!empty($p['gradient'])) {
@@ -493,12 +494,12 @@ if ($type === 'icon') {
         $textStartX = $pad + ($iconSvgNormalized !== '' ? ($iconW + $gap) : 0);
         $leftTextInnerWidth = $wLeft - $textStartX - $pad;
         $leftTextCenterX = $textStartX + ($leftTextInnerWidth / 2);
-        echo '<text x="' . (int)$leftTextCenterX . '" y="' . (int)$yText . '" fill="' . esc($textColorLabel) . '" font-family="' . esc($fontFamily) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($textLeft) . '</text>';
+        echo '<text x="' . (int)$leftTextCenterX . '" y="' . (int)$yText . '" fill="' . esc($textColorLabel) . '" font-family="' . esc($fontFamily) . '" font-weight="' . esc($fontWeight) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($textLeft) . '</text>';
     }
 
     // Right field (only right corners rounded)
     echo '<g transform="translate(' . (int)$wLeft . ',0)"><path d="' . path_right_rounded((int)$wRight, (int)$h, (int)$radius) . '" fill="' . esc($colorMessage) . '"/></g>';
-    echo '<text x="' . ($wLeft + $wRight / 2) . '" y="' . (int)$yText . '" fill="' . esc($textColorMessage) . '" font-family="' . esc($fontFamily) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($textRight) . '</text>';
+    echo '<text x="' . ($wLeft + $wRight / 2) . '" y="' . (int)$yText . '" fill="' . esc($textColorMessage) . '" font-family="' . esc($fontFamily) . '" font-weight="' . esc($fontWeight) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($textRight) . '</text>';
 
     // Plastic shine/gloss (if enabled)
     if (!empty($p['gradient'])) {
@@ -565,10 +566,10 @@ if ($type === 'github') {
         $textStartX = $pad + ($iconSvgNormalized !== '' ? ($iconW + $gapIconText) : 0);
         $leftTextInnerWidth = $wLeft - $textStartX - $pad;
         $leftTextCenterX = $textStartX + ($leftTextInnerWidth / 2);
-        echo '<text x="' . $leftTextCenterX . '" y="' . $yText . '" fill="' . esc($textColorLabel) . '" font-family="' . esc($fontFamily) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text1) . '</text>';
+        echo '<text x="' . $leftTextCenterX . '" y="' . $yText . '" fill="' . esc($textColorLabel) . '" font-family="' . esc($fontFamily) . '" font-weight="' . esc($fontWeight) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text1) . '</text>';
     }
     echo '<g transform="translate(' . $wLeft . ',0)"><path d="' . path_right_rounded($wRight, $h, $radius) . '" fill="' . esc($colorMessage) . '"/></g>';
-    echo '<text x="' . ($wLeft + $wRight / 2) . '" y="' . $yText . '" fill="' . esc($textColorMessage) . '" font-family="' . esc($fontFamily) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text2) . '</text>';
+    echo '<text x="' . ($wLeft + $wRight / 2) . '" y="' . $yText . '" fill="' . esc($textColorMessage) . '" font-family="' . esc($fontFamily) . '" font-weight="' . esc($fontWeight) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text2) . '</text>';
     if (!empty($p['gradient'])) {
         echo '<rect x="0" y="0" width="' . $W . '" height="' . $h . '" fill="url(#shine)"/>';
         echo '<rect x="0" y="0" width="' . $W . '" height="' . ($h / 2) . '" fill="url(#gloss)"/>';
@@ -632,10 +633,10 @@ if ($type === 'codeberg') {
         $textStartX = $pad + ($iconSvgNormalized !== '' ? ($iconW + $gapIconText) : 0);
         $leftTextInnerWidth = $wLeft - $textStartX - $pad;
         $leftTextCenterX = $textStartX + ($leftTextInnerWidth / 2);
-        echo '<text x="' . $leftTextCenterX . '" y="' . $yText . '" fill="' . esc($textColorLabel) . '" font-family="' . esc($fontFamily) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text1) . '</text>';
+        echo '<text x="' . $leftTextCenterX . '" y="' . $yText . '" fill="' . esc($textColorLabel) . '" font-family="' . esc($fontFamily) . '" font-weight="' . esc($fontWeight) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text1) . '</text>';
     }
     echo '<g transform="translate(' . $wLeft . ',0)"><path d="' . path_right_rounded($wRight, $h, $radius) . '" fill="' . esc($colorMessage) . '"/></g>';
-    echo '<text x="' . ($wLeft + $wRight / 2) . '" y="' . $yText . '" fill="' . esc($textColorMessage) . '" font-family="' . esc($fontFamily) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text2) . '</text>';
+    echo '<text x="' . ($wLeft + $wRight / 2) . '" y="' . $yText . '" fill="' . esc($textColorMessage) . '" font-family="' . esc($fontFamily) . '" font-weight="' . esc($fontWeight) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text2) . '</text>';
     if (!empty($p['gradient'])) {
         echo '<rect x="0" y="0" width="' . $W . '" height="' . $h . '" fill="url(#shine)"/>';
         echo '<rect x="0" y="0" width="' . $W . '" height="' . ($h / 2) . '" fill="url(#gloss)"/>';
@@ -699,10 +700,10 @@ if ($type === 'forgejo') {
         $textStartX = $pad + ($iconSvgNormalized !== '' ? ($iconW + $gapIconText) : 0);
         $leftTextInnerWidth = $wLeft - $textStartX - $pad;
         $leftTextCenterX = $textStartX + ($leftTextInnerWidth / 2);
-        echo '<text x="' . $leftTextCenterX . '" y="' . $yText . '" fill="' . esc($textColorLabel) . '" font-family="' . esc($fontFamily) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text1) . '</text>';
+        echo '<text x="' . $leftTextCenterX . '" y="' . $yText . '" fill="' . esc($textColorLabel) . '" font-family="' . esc($fontFamily) . '" font-weight="' . esc($fontWeight) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text1) . '</text>';
     }
     echo '<g transform="translate(' . $wLeft . ',0)"><path d="' . path_right_rounded($wRight, $h, $radius) . '" fill="' . esc($colorMessage) . '"/></g>';
-    echo '<text x="' . ($wLeft + $wRight / 2) . '" y="' . $yText . '" fill="' . esc($textColorMessage) . '" font-family="' . esc($fontFamily) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text2) . '</text>';
+    echo '<text x="' . ($wLeft + $wRight / 2) . '" y="' . $yText . '" fill="' . esc($textColorMessage) . '" font-family="' . esc($fontFamily) . '" font-weight="' . esc($fontWeight) . '" font-size="' . $font . '" text-anchor="middle" dominant-baseline="middle">' . esc($text2) . '</text>';
     if (!empty($p['gradient'])) {
         echo '<rect x="0" y="0" width="' . $W . '" height="' . $h . '" fill="url(#shine)"/>';
         echo '<rect x="0" y="0" width="' . $W . '" height="' . ($h / 2) . '" fill="url(#gloss)"/>';
