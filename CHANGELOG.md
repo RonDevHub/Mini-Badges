@@ -17,6 +17,10 @@
 - [21.10.2025] Values ​​for the Forgejo instance have been added to the config file
 - [01.02.2025] Dutch language added
 
+### Funny dialects
+- [01.02.2025] Bavarian Mild
+- [01.02.2025] Bavarian Hardcore
+
 ### Changed
 
 ### Fixed
