@@ -18,8 +18,9 @@
 - [01.02.2025] Dutch language added
 
 ### Funny dialects
-- [01.02.2025] Bavarian Mild
-- [01.02.2025] Bavarian Hardcore
+- [01.02.2025] Bavarian Mild *dialekt1.php*
+- [01.02.2025] Bavarian Hardcore *dialekt2.php*
+- [01.02.2025] Saxon dialect *dialekt3.php*
 
 ### Changed
 
