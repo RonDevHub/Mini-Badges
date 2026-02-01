@@ -10,6 +10,7 @@ return [
 
     // Typography
     'fontFamily' => 'Courier New, Consolas, monospace, Noto Color Emoji, Segoe UI Emoji, Apple Color Emoji, DejaVu Sans, Verdana, sans-serif',
+    'fontWeight' => 'bold',
 
     // Caching for API results (seconds)
     'cacheTime'           => 600,
