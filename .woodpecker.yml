@@ -1,14 +1,13 @@
-pipeline:
+steps:
   badge-test:
     image: php:8.2-cli
+    secrets: [ FORGEJO_TOKEN ]
     commands:
       - echo "🚀 Pipeline durch Push ausgelöst"
-
-      # Commit Hash aus Woodpecker
       - export COMMIT=${CI_COMMIT_SHA}
       - echo "🔑 Commit: $COMMIT"
 
-      # Pending Status an Forgejo
+      # Pending Status
       - |
         curl -X POST "https://commitcloud.net/api/v1/repos/RonDevHub/Mini-Badges/statuses/$COMMIT" \
           -H "Content-Type: application/json" \
@@ -34,7 +33,7 @@ pipeline:
           -H "Authorization: Bearer $FORGEJO_TOKEN" \
           -d "{ \"state\": \"$STATUS\", \"description\": \"Badge Test Result\", \"context\": \"woodpecker/badge-test\" }"
 
-      # Fehler werfen, wenn Badge fehlt
+      # Fehler werfen
       - |
         if [ "$STATUS" = "failure" ]; then
           echo "❌ Badge Test fehlgeschlagen"
@@ -43,6 +42,7 @@ pipeline:
 
   notify-success:
     image: alpine
+    secrets: [ MATRIX_TOKEN ]
     when:
       status: success
     commands:
@@ -53,6 +53,7 @@ pipeline:
 
   notify-failure:
     image: alpine
+    secrets: [ MATRIX_TOKEN ]
     when:
       status: failure
     commands:
