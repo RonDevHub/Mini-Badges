@@ -1,0 +1,62 @@
+pipeline:
+  badge-test:
+    image: php:8.2-cli
+    commands:
+      - echo "🚀 Pipeline durch Push ausgelöst"
+
+      # Commit Hash aus Woodpecker
+      - export COMMIT=${CI_COMMIT_SHA}
+      - echo "🔑 Commit: $COMMIT"
+
+      # Pending Status an Forgejo
+      - |
+        curl -X POST "https://commitcloud.net/api/v1/repos/RonDevHub/Mini-Badges/statuses/$COMMIT" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $FORGEJO_TOKEN" \
+          -d '{ "state": "pending", "description": "Badge Test running", "context": "woodpecker/badge-test" }'
+
+      # Badge erzeugen
+      - php badge.php type=static left=Hallo right=Welt style=flat > output.svg
+
+      # Badge prüfen
+      - |
+        if [ -f output.svg ]; then
+          STATUS="success"
+        else
+          STATUS="failure"
+        fi
+        echo "📦 Badge File Status: $STATUS"
+
+      # Ergebnis an Forgejo
+      - |
+        curl -X POST "https://commitcloud.net/api/v1/repos/RonDevHub/Mini-Badges/statuses/$COMMIT" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $FORGEJO_TOKEN" \
+          -d "{ \"state\": \"$STATUS\", \"description\": \"Badge Test Result\", \"context\": \"woodpecker/badge-test\" }"
+
+      # Fehler werfen, wenn Badge fehlt
+      - |
+        if [ "$STATUS" = "failure" ]; then
+          echo "❌ Badge Test fehlgeschlagen"
+          exit 1
+        fi
+
+  notify-success:
+    image: alpine
+    when:
+      status: success
+    commands:
+      - |
+        curl -XPOST "https://matrix.s3cr.net/_matrix/client/v3/rooms/!fPQlDFSrZpnlfnEfYH:matrix.s3cr.net/send/m.room.message?access_token=$MATRIX_TOKEN" \
+          -H 'Content-Type: application/json' \
+          -d '{ "msgtype": "m.text", "body": "✅ Woodpecker Pipeline erfolgreich abgeschlossen!" }'
+
+  notify-failure:
+    image: alpine
+    when:
+      status: failure
+    commands:
+      - |
+        curl -XPOST "https://matrix.s3cr.net/_matrix/client/v3/rooms/!fPQlDFSrZpnlfnEfYH:matrix.s3cr.net/send/m.room.message?access_token=$MATRIX_TOKEN" \
+          -H 'Content-Type: application/json' \
+          -d '{ "msgtype": "m.text", "body": "❌ Woodpecker Pipeline fehlgeschlagen — Logs prüfen!" }'
