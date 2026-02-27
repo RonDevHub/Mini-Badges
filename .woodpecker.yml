@@ -47,7 +47,7 @@ steps:
       - apk add --no-cache curl
       - echo "Token Debug $MATRIX_TOKEN"
       - |
-        curl -XPOST "https://matrix.s3cr.net/_matrix/client/v3/rooms/!fPQlDFSrZpnlfnEfYH:matrix.s3cr.net/send/m.room.message?access_token=${MATRIX_TOKEN}" \
+        curl -XPOST "https://matrix.s3cr.net/_matrix/client/v3/rooms/!fPQlDFSrZpnlfnEfYH:matrix.s3cr.net/send/m.room.message?access_token=$MATRIX_TOKEN" \
           -H 'Content-Type: application/json' \
           -d '{ "msgtype": "m.text", "body": "Woodpecker Pipeline erfolgreich abgeschlossen!" }'
 
