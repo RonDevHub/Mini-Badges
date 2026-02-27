@@ -1,0 +1,53 @@
+steps:
+  badge-test:
+    image: php:8.2-cli
+    secrets: [ FORGEJO_TOKEN ]
+    commands:
+      - echo "🚀 Pipeline durch Push ausgelöst"
+      - export COMMIT="${CI_COMMIT_SHA}"
+      - echo "🔑 Commit: ${COMMIT}"
+      - |
+        curl -X POST "https://commitcloud.net/api/v1/repos/RonDevHub/Mini-Badges/statuses/${COMMIT}" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${FORGEJO_TOKEN}" \
+          -d '{ "state": "pending", "description": "Badge Test running", "context": "woodpecker/badge-test" }'
+      - php badge.php type=static left=Hallo right=Welt style=flat > output.svg
+      - |
+        if [ -f output.svg ]; then
+          STATUS="success"
+        else
+          STATUS="failure"
+        fi
+        echo "📦 Badge File Status: ${STATUS}"
+      - |
+        curl -X POST "https://commitcloud.net/api/v1/repos/RonDevHub/Mini-Badges/statuses/${COMMIT}" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${FORGEJO_TOKEN}" \
+          -d "{ \"state\": \"${STATUS}\", \"description\": \"Badge Test Result\", \"context\": \"woodpecker/badge-test\" }"
+      - |
+        if [ "${STATUS}" = "failure" ]; then
+          echo "❌ Badge Test fehlgeschlagen"
+          exit 1
+        fi
+
+  notify-success:
+    image: alpine
+    secrets: [ MATRIX_TOKEN ]
+    when:
+      status: success
+    commands:
+      - |
+        curl -XPOST "https://matrix.s3cr.net/_matrix/client/v3/rooms/!fPQlDFSrZpnlfnEfYH:matrix.s3cr.net/send/m.room.message?access_token=${MATRIX_TOKEN}" \
+          -H 'Content-Type: application/json' \
+          -d '{ "msgtype": "m.text", "body": "✅ Woodpecker Pipeline erfolgreich abgeschlossen!" }'
+
+  notify-failure:
+    image: alpine
+    secrets: [ MATRIX_TOKEN ]
+    when:
+      status: failure
+    commands:
+      - |
+        curl -XPOST "https://matrix.s3cr.net/_matrix/client/v3/rooms/!fPQlDFSrZpnlfnEfYH:matrix.s3cr.net/send/m.room.message?access_token=${MATRIX_TOKEN}" \
+          -H 'Content-Type: application/json' \
+          -d '{ "msgtype": "m.text", "body": "❌ Woodpecker Pipeline fehlgeschlagen — Logs prüfen!" }'
