@@ -1,7 +1,12 @@
+when:
+  event: [ push, manual ]
+
 steps:
   badge-test:
     image: php:8.2-cli
-    secrets: [ FORGEJO_TOKEN ]
+    environment:
+      FORGEJO_TOKEN:
+        from_secret: FORGEJO_TOKEN
     commands:
       - echo "Pipeline durch Push ausgelöst"
       - export COMMIT="${CI_COMMIT_SHA}"
@@ -32,9 +37,12 @@ steps:
 
   notify-success:
     image: alpine
-    secrets: [ MATRIX_TOKEN ]
     when:
       status: success
+      event: [ push, manual ]
+    environment:
+      MATRIX_TOKEN:
+        from_secret: MATRIX_TOKEN
     commands:
       - |
         curl -XPOST "https://matrix.s3cr.net/_matrix/client/v3/rooms/!fPQlDFSrZpnlfnEfYH:matrix.s3cr.net/send/m.room.message?access_token=${MATRIX_TOKEN}" \
@@ -43,9 +51,12 @@ steps:
 
   notify-failure:
     image: alpine
-    secrets: [ MATRIX_TOKEN ]
     when:
       status: failure
+      event: [ push, manual ]
+    environment:
+      MATRIX_TOKEN:
+        from_secret: MATRIX_TOKEN
     commands:
       - |
         curl -XPOST "https://matrix.s3cr.net/_matrix/client/v3/rooms/!fPQlDFSrZpnlfnEfYH:matrix.s3cr.net/send/m.room.message?access_token=${MATRIX_TOKEN}" \
