@@ -45,7 +45,7 @@ steps:
         from_secret: MATRIX_TOKEN
     commands:
       - apk add --no-cache curl
-      - echo "Token Debug: '${MATRIX_TOKEN}'"
+      - echo "Token Debug '${MATRIX_TOKEN}'"
       - |
         curl -XPOST "https://matrix.s3cr.net/_matrix/client/v3/rooms/!fPQlDFSrZpnlfnEfYH:matrix.s3cr.net/send/m.room.message?access_token=${MATRIX_TOKEN}" \
           -H 'Content-Type: application/json' \
@@ -61,7 +61,7 @@ steps:
         from_secret: MATRIX_TOKEN
     commands:
       - apk add --no-cache curl
-      - echo "Token Debug: '${MATRIX_TOKEN}'"
+      - echo "Token Debug '${MATRIX_TOKEN}'"
       - |
         curl -XPOST "https://matrix.s3cr.net/_matrix/client/v3/rooms/!fPQlDFSrZpnlfnEfYH:matrix.s3cr.net/send/m.room.message?access_token=${MATRIX_TOKEN}" \
           -H 'Content-Type: application/json' \
